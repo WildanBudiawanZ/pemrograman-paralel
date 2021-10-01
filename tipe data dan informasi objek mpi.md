@@ -1,5 +1,7 @@
 # Tipe Data dan Informasi Objek MPI
 
+Sumber : Agus Kurniawan. 2010. Pemrograman Paralel dengan MPI dan C. Andi (47-77)
+
 Tipe data MPI banyak digunakan untuk melakukan pengiriman dan penerimaan data dari node cluster pada mesin paralel
 
 ``MPI_Datatype mydata;``
@@ -19,10 +21,23 @@ for (i = 0; i < numtasks; i++)
  
 ```
 ## Tipe Data Dasar
-| Tables        | Are           | Cool  |
-| ------------- |:-------------:| -----:|
-| col 3 is      | right-aligned | $1600 |
-| col 2 is      | centered      |   $12 |
-| zebra stripes | are neat      |    $1 |
+
+
+
+| Tipe Data MPI | Persamaan Tipe Data pada Bahasa C  |
+| ------------- |:-------------:|
+| MPI_CHAR | signed char |
+| MPI_SHORT | signed short int |
+| MPI_INT  | signed int  |
+| MPI_LONG  | signed long int  |
+| MPI_UNSIGNED_CHAR  | unsigned char  |
+| MPI_UNSIGNED_SHORT  | unsigned short int  |
+| MPI_UNSIGNED  | unsigned int  |
+| MPI_USIGNED_LONG  | unsigned long int  |
+| MPI_FLOAT  | float  |
+| MPI_DOUBLE  | double  |
+| MPI_LONG_DOUBLE  | long double  |
+| MPI_BYTE  |   |
+| MPI_PACKED  |   |
 
 ## Tipe Data Turunan
