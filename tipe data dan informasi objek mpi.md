@@ -146,3 +146,11 @@ int main(int argc, char *argv[])
 }
 ```
 
+## Vektor
+
+TIpe data ini memungkinkan kita melakukan replikasi tipe data ke lokasi yang tersimpan dalam blok. Masing-masing blok diperoleh dengan menggabungkan sejumlah data yang sama dari tipe data lama. Antar blok dipisahkan dengan space bertipe data lama ``MPI_Type_vector``.
+
+```
+int MPI_Type_vektor(int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype &type)
+```
+
