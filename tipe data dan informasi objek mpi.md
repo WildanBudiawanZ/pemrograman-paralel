@@ -312,3 +312,15 @@ int main(int argc, char *argv[])
 
 ```
 
+### Index
+
+Tipe data index digunakan untuk replikasi tipe data tertentu menjadi sebuah sekumpulan urutan data blok yang masing-masingnya terdiri dari tipe data yang dialami dengan interval antar bloknya ``MPI_Type_indexed()``.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| count | jumlah replikasi blok |
+| array_of_blocklengths | jumlah blok masing-masing element |
+| array_of_displacemenets | jarak interval antar blok |
+| oldtype | tipe data lama |
+| newtype | output tipe data baru |
+
