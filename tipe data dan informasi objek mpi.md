@@ -379,7 +379,7 @@ int main(int argc, char *argv[])
 }
 ```
 
-### Duplikasi Tipe Data
+# Duplikasi Tipe Data
 
 Tipe data bawaan C atau turunan dapat diduplikasi ke suatu variabel tertentu dengan ``MPI_Type_dup()``.
 
