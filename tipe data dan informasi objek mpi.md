@@ -48,5 +48,34 @@ MPI_Recv(&token,1,MPI_INT,1,0,MPI_COMM_WORLD,NULL);
 MPI_Send(array,total,MPI_DOUBLE,1,0,MPI_COMM_WORLD); 
 ```
 
+Pada kode diatas,``MPI Recv`` menerima dan bertipe ``MPI_INT`` sedangkan pada ``MPI_Send`` kode diatas melakukan pengiriman array data bertipe ``DOUBLE`` maka kita memberikan tipe data ``MPI_DOUBLE`` pada ``MPI_Send``. Implementasi paling mudah adalah memanfaatkan data array atau struct,Misalkan mempunyai tipe dasar struct pada bahasa C sebagai berikut. 
+
+```
+typedef struct {    
+ float x,y,z;    
+ float velo;    
+ int n,type; 
+} particle;
+```
+
+Selanjutnya tipe data ini akan digunakan pada aplikasi MPI. Oleh karena itu kita perlu membuat suatu tipe data baru berupa tipe data turunan agar tipe data struct kita dipergunakan sesuai standar MPI.
 
 ## Tipe Data Turunan
+
+Beberapa tipe data turunan:
+1. Kontinyu
+2. Vector
+3. Struct
+4. Index
+
+Setiap membuat tipe data turunan pada MPI, harus konfirmasi dengan memanggil ``MPI_Type_commit()``. Sedangkan untuk menghpus menggunakan ``MPI_Type_free ()``
+
+```
+MPI_Type_commit(MPI_Datatype *datatype)
+MPI_Type_free(MPI_Datatype *datatype)
+```
+
+datatype tipe data yng mau dicommit atau difree.
+
+### Kontinyu
+
