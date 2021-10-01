@@ -416,3 +416,148 @@ int main(int argc, char *argv[])
 }
 ```
 
+# Informasi Objek
+
+Objek yang dibuat pada MPI dapat diset sebuah nilai tertentu dan dapat diakses objek lainnya. Informasi ini dapat dimanipulasi sesuai dengan kebutuhan.
+```cpp
+typedef int MPI_Info;
+```
+
+1. Membuat  Objek MPI_Info
+```cpp
+int MPI_Info_create(MPI_Info, info1)
+```
+
+2. Mengisi dan Edit Nilai
+
+set key dari sebuah info
+```cpp
+MPI_Info_set(info1, "version", "1.0")
+```
+
+display nilai dari sebuah info
+```cpp
+MPI_Info_get(
+	info,
+	key,
+	value,
+	valuelen,
+	flag
+)
+```
+
+3. Menghapus Nilai
+
+```cpp
+MPI_Info_delete(info, key)
+```
+
+demo code:
+```cpp
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+ 
+int main( int argc, char *argv[] )
+{
+	int rank,i,total_key;
+    MPI_Info info1, infodup;
+    int nkeys, nkeysdup, vallen, flag, flagdup;
+    char key[MPI_MAX_INFO_KEY], keydup[MPI_MAX_INFO_KEY];
+    char value[MPI_MAX_INFO_VAL], valdup[MPI_MAX_INFO_VAL];
+ 
+    MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    MPI_Info_create(&info1);
+    MPI_Info_set(info1, "blog", "blog.aguskurniawan.net");
+    MPI_Info_set(info1, "file", "mydata.txt"); 
+ 
+    MPI_Info_dup( info1, &infodup );
+ 
+    MPI_Info_get_nkeys(infodup, &nkeysdup);
+    MPI_Info_get_nkeys(info1, &nkeys);
+    if (nkeys != nkeysdup) 
+	{        
+        printf("Jumlah key [%d] dan duplikasi key [%d] tidak sama \r\n",nkeys,nkeysdup);
+
+		MPI_Finalize();
+		return 0;
+    }
+
+    vallen = MPI_MAX_INFO_VAL;
+    for (i=0; i<nkeys; i++) 
+	{
+        MPI_Info_get_nthkey(info1,i,key);
+        MPI_Info_get_nthkey( infodup,i,keydup);
+        if (strcmp(key, keydup)) 
+		{
+            printf("Key tidak sama: %s != %s\n", keydup, key);
+        }
+ 
+        vallen = MPI_MAX_INFO_VAL;
+        MPI_Info_get(info1, key, vallen, value, &flag);
+        MPI_Info_get(infodup, keydup, vallen, valdup, &flagdup);
+        if (!flag || !flagdup) 
+		{            
+            printf("Rank %d: Error mengambil key %s\r\n",rank, key);
+        }
+        else 
+		{
+            printf("Rank %d: key \"%s\" value \"%s\"\r\n",rank, key,value);
+			printf("Rank %d: key duplikasi \"%s\" value \"%s\"\r\n",rank, keydup,valdup);
+        }
+    } 
+
+	total_key = nkeys;
+	MPI_Info_delete(info1,"file");
+	MPI_Info_get_nkeys(info1, &nkeys);	
+	printf("Rank %d: total_key [%d] key yang telah dihapus [%d]\r\n",rank,total_key,nkeys);
+
+    MPI_Info_free(&info1);
+    MPI_Info_free(&infodup);
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
+# MPI Proses
+
+| Fungsi | Kegunaan  |
+| ------------- |:-------------:|
+| MPI_Comm_size() | Untuk mengetahui ukuran komunikasi |
+| MPI_Comm_rank() | Untuk mengetahui rank yang digunakan |
+| MPI_Get_version() | Cek versi MPI |
+| MPI_get_processor_name | Cek nama processor |
+
+demo code:
+```cpp
+#include <mpi.h>
+#include <stdio.h>
+ 
+int main(int argc, char *argv[])
+{
+	int rank,size;
+	int version, subversion,len;
+	char name[MPI_MAX_PROCESSOR_NAME];
+ 
+    MPI_Init(&argc, &argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    MPI_Get_version(&version,&subversion);
+	MPI_Get_processor_name(name,&len);
+
+	printf("Rank: %d\r\n",rank);
+	printf("Size: %d\r\n",size);
+	printf("Nama Proses: %s\r\n",name);
+	printf("Versi: %d\r\n",version,subversion);	
+    
+    MPI_Finalize();
+    return 0;
+}
+
+```
