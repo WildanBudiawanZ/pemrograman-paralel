@@ -22,8 +22,6 @@ for (i = 0; i < numtasks; i++)
 ```
 ## Tipe Data Dasar
 
-
-
 | Tipe Data MPI | Persamaan Tipe Data pada Bahasa C  |
 | ------------- |:-------------:|
 | MPI_CHAR | signed char |
@@ -39,5 +37,16 @@ for (i = 0; i < numtasks; i++)
 | MPI_LONG_DOUBLE  | long double  |
 | MPI_BYTE  |   |
 | MPI_PACKED  |   |
+
+Contoh penggunaan tipe data dasar untuk mengirim dan menerima data melalui MPI_Recv dan MPI_Send:
+
+```
+INT token,total=100;
+DOUBLE array[100];
+
+MPI_Recv(&token,1,MPI_INT,1,0,MPI_COMM_WORLD,NULL);
+MPI_Send(array,total,MPI_DOUBLE,1,0,MPI_COMM_WORLD); 
+```
+
 
 ## Tipe Data Turunan
