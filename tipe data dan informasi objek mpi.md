@@ -379,3 +379,40 @@ int main(int argc, char *argv[])
 }
 ```
 
+### Duplikasi Tipe Data
+
+Tipe data bawaan C atau turunan dapat diduplikasi ke suatu variabel tertentu dengan ``MPI_Type_dup()``.
+
+```cpp
+int MPI_Datatype_dup(
+	type,
+	newtype
+)
+```
+
+full code:
+```cpp
+
+#include <mpi.h>
+#include <stdio.h>
+ 
+int main(int argc, char *argv[])
+{
+    MPI_Datatype type, type2;
+ 
+    MPI_Init(&argc, &argv);
+ 
+    MPI_Type_contiguous( 100, MPI_CHAR, &type );
+    MPI_Type_commit(&type);
+
+    MPI_Type_dup(type, &type2);
+    
+	
+	MPI_Type_free(&type);
+	MPI_Type_free(&type2);
+    
+    MPI_Finalize();
+    return 0;
+}
+```
+
