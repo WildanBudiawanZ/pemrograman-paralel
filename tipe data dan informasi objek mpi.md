@@ -220,3 +220,95 @@ int main(int argc, char *argv[])
 
 ### Struct
 
+Tipe data struct memungkinkan bekerja dengan berbagai tipe data ``MPI_Type_create_struct()``.
+
+```
+int MPI_Type_create_struct(
+	int count, 
+	int array_of_blocklengths[],
+	MPI_Aint array_of_displacemenets[],
+	MPI_Datatype array_of_types[],
+	MPI_Datatype *newtype
+)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| count | jumlah replikasi blok |
+| array_of_blocklengths | jumlah blok masing-masing element |
+| array_of_displacemenets | jarak interval antar blok |
+| array_of_types | tipe data elemen masing-masing blok |
+| newtype | output tipe data baru |
+
+contoh penggunaan tipe data struct pada MPI:
+```
+MPI_Datatype type[3] = { MPI_INT, MPI_CHAR, MPI_INT };
+int blocklen[3] = { 1, 20, 1 };
+MPI_Aint disp[3];
+
+MPI_Type_create_struct(3, blocklen, disp, type, &Customertype);
+MPI_Type_commit(&Customertype);
+```
+
+full code:
+```
+#include <mpi.h>
+#include <stdio.h>
+#include <string.h>
+
+struct Customer
+{
+    int id;
+	char name[20];
+    int zipcode;    
+};
+
+int main(int argc, char *argv[])
+{
+    struct Customer customers[5],recv_customers[5];
+    int i,rank;
+    MPI_Status status;
+    MPI_Datatype Customertype;
+    MPI_Datatype type[3] = { MPI_INT, MPI_CHAR, MPI_INT };
+    int blocklen[3] = { 1, 20, 1 };
+    MPI_Aint disp[3];
+ 
+    MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	disp[0] = 0;
+	disp[1] = sizeof(char);
+	disp[2] = 20*sizeof(char);
+
+    MPI_Type_create_struct(3, blocklen, disp, type, &Customertype);
+    MPI_Type_commit(&Customertype);    
+
+    if (rank == 0)
+    {		
+		for(i=0;i<5;i++)
+		{
+			customers[i].id = i + 1;					
+			sprintf(customers[i].name,"User %d",i + 1);
+			customers[i].zipcode = 1001 + i;
+		}		
+
+        MPI_Send(customers, 6, Customertype, 1, 99, MPI_COMM_WORLD);
+    }
+    else 
+	if (rank == 1)
+    {
+        MPI_Recv(recv_customers, 6, Customertype, 0, 99, MPI_COMM_WORLD, &status);
+		for(i=0;i<5;i++)
+		{
+			printf("Rank %d data %d diterima: id %d name %s zipcode %d\r\n",
+				rank,i+1,recv_customers[i].id,recv_customers[i].name,recv_customers[i].zipcode);
+		}
+		
+    }
+
+	MPI_Type_free(&Customertype);
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
