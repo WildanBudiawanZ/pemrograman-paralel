@@ -56,3 +56,88 @@ int main(int argc, char* argv[])
 }
 ```
 
+### MPI_Send()
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf | Buffer data yang akan dikirim |
+| count | Jumlah buffer data |
+| datatype | Tipe data dari buffer data yang akan dikirim |
+| dest | Tujuan rank |
+| tag | Message tag 0 - 32767 |
+| comm | Communicator yang digunakan |
+
+### MPI_Recv()
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf | Buffer data yang akan diterima |
+| count | Jumlah buffer data |
+| datatype | Tipe data dari buffer data yang akan diterima |
+| source | Sumber rank |
+| tag | Message tag 0 - 32767 |
+| comm | Communicator yang digunakan |
+| status | Status yang telah terjadi pada proses penerimaan data |
+
+### MPI_Status
+
+```
+typedef struct MPI_Status {
+	int count;
+	int cancelled;
+	int MPI_Source;
+	int MPI_Tag;
+	int MPI_Error;
+} MPI_Status; 
+ ```
+ 
+ ```
+ int MPI_Get_count()
+ ```
+ 
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| status | Status yang telah terjadi pada proses penerimaan data |
+| datatype | Tipe data dari buffer data yang akan dikirim |
+| count | Jumlah buffer data |
+
+```
+status.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char* argv[]) 
+{
+	char message[30];
+	int myrank;
+	MPI_Status status;
+	int total;
+	
+	MPI_Init( &argc, &argv );
+	MPI_Comm_rank( MPI_COMM_WORLD, &myrank );
+	printf("Proses rank: %d \r\n", myrank);
+
+	if (myrank == 0) 
+	{
+		strcpy(message,"Halo ini dari rank 0");
+		printf("Data dikirim dari rank 0: %s \r\n", message);
+		MPI_Send(message, strlen(message)+1, MPI_CHAR, 1, 99, MPI_COMM_WORLD);
+	}
+	else if (myrank == 1) 
+	{
+		MPI_Recv(message, 30, MPI_CHAR, 0, 99, MPI_COMM_WORLD, &status);
+		printf("Data yang diterima di rank 1: %s \r\n", message);
+	}
+
+	MPI_Get_count(&status, MPI_CHAR, &total);
+	printf("Total: %d\r\n",total);
+	printf("Tag: %d\r\nSource: %d\r\nError: %d\r\nCount: %d\r\nCancelled: %d\r\n", 
+		status.MPI_TAG,status.MPI_SOURCE,status.MPI_ERROR,status.count,status.cancelled);
+
+	MPI_Finalize();
+	return 0;
+}
+
+```
