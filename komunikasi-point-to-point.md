@@ -13,15 +13,12 @@ Pada MPI, semua komunikasi dieksekusi oleh ``communicator``. Sebuah ``communicat
 
 1. Model standar
 
-a. Banyak digunakan di MPI
-b. MPI menentukan apakah message yang keluar akan menggunakan buffer di lokal sistem atau tidak.
-c. Bagi programmer berarti tidak dapat memaksa untuk menggunakan buffer atau tidak.
+Banyak digunakan di MPI, MPI menentukan apakah message yang keluar akan menggunakan buffer di lokal sistem atau tidak. Bagi programmer berarti tidak dapat memaksa untuk menggunakan buffer atau tidak.
 
 2. Model sinkronus
 Operasi pengiriman akan dianggap selesai bila operasi penerima telah selesai dieksekusi dan sudah menerima data yang dikirim.
 
 3. Model buffer
-
-a. operasi pengiriman yang terjadi dilokal termasuk proses selesainya tidak dipengaruhi oleh kejadian diluar lokal.
+Operasi pengiriman yang terjadi dilokal termasuk proses selesainya tidak dipengaruhi oleh kejadian diluar lokal.
 
 
