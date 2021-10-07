@@ -283,3 +283,90 @@ int main(int argc, char* argv[])
 	return 0;
 }
 ```
+
+## Operasi Non-Blocking MPI
+
+Operasi ini sangat berguna ketika kita bekerja pada lingkungan asynchronous terutama pada aplikasi berbasis multi-thread. Operasi non-blocking MPI dikenali dengan nama operasinya dimana dapat dikategorikan menjadi empat bagian yakni:
+1. Synchronous (S/s)
+2. Immediate (I/i)
+3. Buffer (B/b)
+4. Ready (R/r)
+
+### MPI_Isend()
+
+Operasi ini digunakan untuk mengirim data secara non-blocking dan bersifat immmediate.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf | buffer data yang dikirim |
+| count| jumlah buffer data |
+| datatype| tipe data buffer |
+| dest| tujuan rank |
+| tag| message tag 0-32767 |
+| comm| communicator |
+| request| output dari komunikasi |
+
+### MPI_Ibsend()
+
+Operasi ini digunakan untuk mengirim data secara non-blocking dan bersifat immediate dan menggunakan buffer.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf | buffer data yang dikirim |
+| count| jumlah buffer data |
+| datatype| tipe data buffer |
+| dest| tujuan rank |
+| tag| message tag 0-32767 |
+| comm| communicator |
+| request| output dari komunikasi |
+
+### MPI_Issend()
+
+Operasi ini digunakan untuk mengirim data secara non-blocking, synchronous, dan bersifat immediate.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf | buffer data yang dikirim |
+| count| jumlah buffer data |
+| datatype| tipe data buffer |
+| dest| tujuan rank |
+| tag| message tag 0-32767 |
+| comm| communicator |
+| request| output dari komunikasi |
+
+### MPI_Irsend()
+
+Operasi ini digunakan untuk mengirim data secara non-blocking dan bersifat immediate serta menggunakan mode ready.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf | buffer data yang dikirim |
+| count| jumlah buffer data |
+| datatype| tipe data buffer |
+| dest| tujuan rank |
+| tag| message tag 0-32767 |
+| comm| communicator |
+| request| output dari komunikasi |
+
+
+
+### MPI_Irecv()
+
+Operasi ini digunakan untuk menerima data secara non-blocking dan bersifat immediate.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf | buffer data yang dikirim |
+| count| jumlah buffer data |
+| datatype| tipe data buffer |
+| source | sumber rank |
+| tag| message tag 0-32767 |
+| comm| communicator |
+| request| output dari komunikasi |
+
+
+### Menunggu Proses Selesai pada Non-Blocking
+
+Semua proses MPI yang memanfaatkan operasi non-blocking adalah operasi asinkronus sehingga perlu mengetahui apakah operasi ini selesai atau belum.
+
+#### MPI_Wait()
