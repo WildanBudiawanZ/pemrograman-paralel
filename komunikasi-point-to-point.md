@@ -370,3 +370,121 @@ Operasi ini digunakan untuk menerima data secara non-blocking dan bersifat immed
 Semua proses MPI yang memanfaatkan operasi non-blocking adalah operasi asinkronus sehingga perlu mengetahui apakah operasi ini selesai atau belum.
 
 #### MPI_Wait()
+
+Operasi ini digunakan untuk menunggu operasi MPI non-blocking yang dilakukan sebelumnya.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| request | MPI request yang akan ditunggu |
+| status | status yang dikeluarkan |
+
+#### MPI_Test()
+
+Operasi ini digunakan untuk menguji apakah operasi MPI itu sudah selesai atau belum.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| request | MPI request yang akan ditest |
+| status | status yang dikeluarkan|
+| flag | jika true maka operasi sudah selesai else belum selesai |
+
+#### MPI_Request_free()
+
+Operasi ini digunakan untuk memberikan tanda suatu operasi MPI supaya dihapus.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| request | MPI request yang akan dihapus |
+
+
+#### MPI_Waitany()
+
+Operasi ini digunakan untuk menunggu spesifik atau beberapa operasi non-blocking MPI yang sudah dilakukan sebelumnya.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|count|jumlah operasi non-blocking|
+|array_of_requests|kumpulan MPI_Request|
+|index|output index dari MPI_Request|
+|status| output status|
+
+#### MPI_Waitall()
+
+Operasi ini digunakan untuk menunggu semua operasi non-blocking MPI yang dilakukan sebelumnya.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| count | jumlah operasi non-blocking yang ditunggu |
+|array_of_request | kumpulan MPI_Request |
+|array_of_status | output kumpulan status|
+
+
+#### MPI_Testany()
+
+Operasi ini digunakan untuk menguji secara spesifik atau beberapa operasi non-blocking MPI sudah selesai atau belum.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| count | jumlah operasi non-blocking yang ditunggu |
+|array_of_request | kumpulan MPI_Request |
+|index|output dari index MPI_Request|
+|flag| jika true maka sudah selesai else belum selesai|
+|status| output status|
+
+#### MPI_Testall()
+
+Operasi ini digunakan untuk menguji semua operasi non-blocking MPI sudah selesai atau belum.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| count | jumlah operasi non-blocking yang ditunggu |
+|array_of_request | kumpulan MPI_Request |
+|flag| jika true maka sudah selesai else belum selesai|
+|array_of_status| kumpulan output status|
+
+
+### Demo
+Pada demo ini, akan dicontohkan penggunaan komunikasi point-to-point dengan menggunakan operasi MPI secara non-blocking. Pada demo ini akan mengirim data dari rank 1 ke rank 0 secara non-blocking yaitu ``MPI_Isend()`` dan menunggu operasi tersebut selesai dengan ``MPI_Wait()``.
+
+```cpp
+point2point_nonblocking.c
+#include <mpi.h>
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) 
+{
+    int rank, size;
+	char message[10];
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   
+    if (size != 2) 
+	{
+        printf("Minimal proses/processor 2\r\n");
+		MPI_Finalize();
+        return 0;
+    }
+
+	printf("Rank %d\r\n", rank);
+    if (rank != 0) 
+	{
+		MPI_Request request;		
+        strcpy(message,"DATA-MPI");		
+        
+        MPI_Isend(message, 10, MPI_CHAR, 0, 99, MPI_COMM_WORLD, &request);       
+        MPI_Wait(&request, MPI_STATUS_IGNORE);
+        printf("Node %d telah mengirim data ke rank 0\r\n", rank);
+    } 
+	else 
+	{       
+        MPI_Recv(message, 10, MPI_CHAR, 1, 99, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        printf("Node %d menerima data \"%s\" dari node %d\r\n", rank, message, 1);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+```
