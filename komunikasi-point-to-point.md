@@ -26,7 +26,9 @@ Operasi pengiriman yang terjadi dilokal termasuk proses selesainya tidak dipenga
 
 Blocking send/receive tidak akan mengembalikan nilai sampai buffer sudah penuh dengan data yang akan dikirim/diterima.
 
-```
+```cpp
+point2point.c
+
 #include <mpi.h>
 #include <stdio.h>
 #include <string.h>
@@ -81,7 +83,7 @@ int main(int argc, char* argv[])
 
 ### MPI_Status
 
-```
+```cpp
 typedef struct MPI_Status {
 	int count;
 	int cancelled;
@@ -91,7 +93,7 @@ typedef struct MPI_Status {
 } MPI_Status; 
  ```
  
- ```
+ ```cpp
  int MPI_Get_count()
  ```
  
@@ -101,8 +103,8 @@ typedef struct MPI_Status {
 | datatype | Tipe data dari buffer data yang akan dikirim |
 | count | Jumlah buffer data |
 
-```
-status.c
+```cpp
+point2point_status.c
 
 #include <mpi.h>
 #include <stdio.h>
@@ -141,3 +143,100 @@ int main(int argc, char* argv[])
 }
 
 ```
+
+### MPI_Buffer
+
+Pada saat mengirim data melalui MPI_Send, harus mendefinisikan buffer data dan panjangnya yang akan digunakan. Hanya satu buffer yang dapat digunakan pada proses yang berjalan.
+```cpp
+MPI_Buffer_attach(buffer, size)
+MPI_Buffer_detach(buffer_addr, size)
+```
+
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buffer | alamat buffer data yang akan digunakan |
+| size | ukurang jumlah buffer |
+| buffer_addr | alamat buffer data yang digunakan |
+
+bila menggunakan ``MPI_Buffer_attach()`` dan ``MPI_Buffer_detach()`` maka proses mengirim datanya memerlukan mode buffer ``MPI_Bsend()``.
+
+```cpp
+MPI_Bsend()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf | buffer data yang akan dikirim |
+| count | jumlah buffer data |
+| datatype | tipe data dari buffer yang akan dikirim |
+| dest | tujuan rank |
+| tag | message tag 0-32767 |
+| comm | communicator yang digunakan |
+
+full code:
+```cpp
+point2point_buffered.c
+#include <mpi.h>
+#include <stdlib.h>
+#include <math.h>
+#include <stdio.h>
+
+#define N 1000
+int main(int argc, char *argv[])
+{
+	int     numtasks, rank, ret=0, i, 
+    dest=1, tag=33, source=0, size;
+	double  data[N];
+	void    *buffer;
+	MPI_Status status;
+  
+	MPI_Init(&argc,&argv);
+	MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  
+	if (numtasks != 2) 
+	{
+		printf("Jumlah proses harus 2\r\n");
+		MPI_Finalize();
+		return 0;
+	}
+	printf ("Rank %d\r\n", rank);
+  	
+	if (rank == 0) 
+	{		
+		for(i=0; i<N; i++)
+			data[i] =  (double)rand();
+      
+	
+		MPI_Pack_size (N, MPI_DOUBLE,MPI_COMM_WORLD, &size);
+		size = size +  MPI_BSEND_OVERHEAD;
+		printf("Ukuran buffer= %d Overhead %d\n",size, MPI_BSEND_OVERHEAD);
+      		
+		buffer = (void*)malloc(size);
+		ret = MPI_Buffer_attach(buffer, size);
+		if (ret != MPI_SUCCESS) 
+		{
+			printf("Buffer attach gagal. Code= %d\r\n", ret);
+		    MPI_Finalize();
+			return 0;
+		}
+		ret = MPI_Bsend(data, N, MPI_DOUBLE, dest, tag,MPI_COMM_WORLD);
+		printf("Message telah dikirim. Code= %d\r\n",ret);
+		MPI_Buffer_detach(&buffer, &size);
+		free (buffer);		
+	}	
+	if (rank == 1) 
+	{
+		MPI_Recv(data, N, MPI_DOUBLE, source, tag,MPI_COMM_WORLD, &status);
+		printf("Message diterima. Code= %d. Tag=%d. Source=%d\r\n",
+			ret,status.MPI_TAG,status.MPI_SOURCE);
+		
+	}
+	MPI_Finalize();
+	return 0;
+}
+
+
+```
+
