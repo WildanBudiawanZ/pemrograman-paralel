@@ -6,7 +6,7 @@ Mekanisme dasar sistem komunikasi pada MPI adalah proses bertukaran data pada se
 MPI menyediakan beberapa fungsi untuk mengirim dan menerima data baik secara blocking atau non-blocking.
 Blocking send/receive adalah proses yang tidak akan mengembalikan nilai sampai buffer sudah penuh dengan data yang akan dikirim/diterima. Artinya, kode selanjutnya setelah blocking send/receive tidak akan dieksekusi bila proses blocking send/receive belum selesai.
 Sedangkan non-blocking akan mengembalikan nilai walaupun data yang dikirm/diterima belum dieksekusi.
-
+ 
 Pada MPI, semua komunikasi dieksekusi oleh ``communicator``. Sebuah ``communicator`` mewakili sebuah komunikasi domain yang merupakan kumpulan proses yang saling tukar-menukar data. ``MPI_COMM_WORLD`` komunikasi domain yang umum digunakan di MPI.
 
 ## Model Komunikasi MPI
@@ -488,3 +488,85 @@ int main(int argc, char *argv[])
     return 0;
 }
 ```
+
+## MPI_Sendrecv()
+
+MPI menyediakan operasi pengiriman dan penerimaan data secara bersamaan menggunakan ``MPI_Sendrecv()``.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf| data yang dikirim| 
+| sendcount| jumlah data yang dikirim| 
+| sendtype| tipe data yang dikirim| 
+| dest| tujuan rank| 
+| sendtag| message tag 0-32767| 
+| recvbuf| data yang diterima| 
+| recvcount| jumlah data yang diterima| 
+| recvtype| tipe data yang diterima| 
+| source| sumber rank| 
+| recvtag| message tag 0-32767| 
+| comm| coomunicator yang digunakan | 
+| status| status yang dikeluarkan| 
+
+untuk variabel kirim dan terima yang sama, dapat menggunakan ``MPI_Sendrecv_replace()``
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf| data yang dikirim dan diterima| 
+| count| jumlah data yang dikirim dan diterima| 
+| type| tipe data yang dikirim dan diterima| 
+| dest| tujuan rank| 
+| sendtag| message tag 0-32767| 
+| source| sumber rank|
+| recvtag| message tag 0-32767|
+| comm| communicator yang digunakan|
+| status| status yang dikeluarkan|
+
+```cpp
+#include <mpi.h>
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) 
+{
+	MPI_Status status;
+    int rank, size;
+	char sendMessage[30];
+	char recvMessage[30];
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   
+    if (size != 2) 
+	{
+        printf("Minimal proses/processor 2\r\n");
+		MPI_Finalize();
+        return 0;
+    }
+
+	printf("Rank %d\r\n", rank);
+    if (rank == 0) 
+	{		
+        strcpy(sendMessage,"DATA-MPI dari rank 0");
+		strcpy(recvMessage,"");
+        
+		MPI_Sendrecv(sendMessage,30,MPI_CHAR,1,99,recvMessage,30,MPI_CHAR,1,99,MPI_COMM_WORLD,&status);
+        printf("Node %d telah mengirim data ke rank 1\r\n", rank);
+		printf("Data yang diterima \"%s\" dari rank 1\r\n", recvMessage);
+    } 
+	if (rank == 1) 
+	{
+		strcpy(sendMessage,"DATA-MPI dari rank 1");
+		strcpy(recvMessage,"");
+        
+		MPI_Sendrecv(sendMessage,30,MPI_CHAR,0,99,recvMessage,30,MPI_CHAR,0,99,MPI_COMM_WORLD,&status);
+        printf("Node %d telah mengirim data ke rank 0\r\n", rank);
+		printf("Data yang diterima \"%s\" dari rank 0\r\n", recvMessage);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
