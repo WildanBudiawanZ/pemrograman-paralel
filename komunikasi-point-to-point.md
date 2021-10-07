@@ -240,3 +240,46 @@ int main(int argc, char *argv[])
 
 ```
 
+### Demo Opearasi Blocking MPI
+
+Pada demo ini, komunikasi MPI diperkaya dengan memanfaatkan operasi blocking. Pada ilustrasi demo ini kita akan aplikasi PING yang dilakukan pada rank 0 dan 1.
+
+```cpp
+#include <mpi.h>
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char* argv[]) 
+{	
+	int rank, dest, source, ret, total, tag=1;  
+	char inmsg[5], outmsg[5];
+	MPI_Status status;
+
+	strcpy(outmsg,"mpi");
+
+	MPI_Init(&argc,&argv);	
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	if (rank == 0) 
+	{
+		dest = 1;
+		source = 1;
+		ret = MPI_Send(&outmsg, strlen(outmsg)+1, MPI_CHAR, dest, tag, MPI_COMM_WORLD);
+		ret = MPI_Recv(&inmsg, 5, MPI_CHAR, source, tag, MPI_COMM_WORLD, &status);
+	} 
+	else if (rank == 1) 
+	{
+		dest = 0;
+		source = 0;
+		ret = MPI_Recv(&inmsg, 5, MPI_CHAR, source, tag, MPI_COMM_WORLD, &status);
+		ret = MPI_Send(&outmsg, strlen(outmsg)+1, MPI_CHAR, dest, tag, MPI_COMM_WORLD);
+	}
+
+	ret = MPI_Get_count(&status, MPI_CHAR, &total);
+	printf("Rank %d: Total karakter yg diterima %d dari rank %d dengan nilai tag %d \n",
+			rank, total, status.MPI_SOURCE, status.MPI_TAG);
+
+	MPI_Finalize();
+	return 0;
+}
+```
