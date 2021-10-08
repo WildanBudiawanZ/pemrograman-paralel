@@ -570,3 +570,78 @@ int main(int argc, char *argv[])
 
 ```
 
+## Pemeriksaan MPI
+
+Memeriksa apa ada data yang masuk pada suatu rank atau menggagalkan suatu operasi MPI dapat menggunakan ``MPI_Iprobe()`` dan ``MPI_Probe()``.
+
+### MPI_Iprobe() dan MPI_Probe
+
+Digunakan untuk mengecek apakah rank dan tag itu ada data atau tidak. ``MPI_Iprobe()`` untuk operasi MPI non-blocking dan ``MPI_Probe()`` untuk operasi MPI blocking.
+
+```cpp
+point2point_probe.c
+
+
+#include <mpi.h>
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) 
+{
+	MPI_Status status;
+    int rank, size;	
+	char message[30];
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   
+	printf("Rank %d\r\n",rank);
+	if(rank==0)
+	{	
+		MPI_Probe(MPI_ANY_SOURCE, 99,MPI_COMM_WORLD,&status);
+		if(status.MPI_SOURCE)
+		{
+			MPI_Recv(&message, 30, MPI_CHAR, status.MPI_SOURCE, 99, MPI_COMM_WORLD, &status);
+			printf("Data message dari rank %d dengan data \"%s\"\r\n",status.MPI_SOURCE,message);
+		}
+		else
+		{
+			printf("Tidak ada data \r\n");
+		}
+
+	}
+	else
+	{
+		printf("Kirim data ke rank 0\r\n");
+		sprintf(message,"Halo ini dari rank %d",rank);
+		MPI_Send(message, 30, MPI_CHAR, 0, 99+(rank-1), MPI_COMM_WORLD);
+	}
+
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
+
+### MPI_Cancel()
+
+Digunakan untuk menggagalkan operasi MPI yang berbasis non-blocking yang sedang terjadi.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| request | Komunikasi yang akan digagalkan |
+
+
+### MPI_Test_cancelled()
+
+Digunakan untuk mengecek apakah operasi dengan suatu status yang diketahui ini digagalkan atau tidak.
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| status | status operasi yang akan dicek |
+| flag | output pengecekan |
+
+## Komunikasi Persisten
