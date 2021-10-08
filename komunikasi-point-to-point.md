@@ -645,3 +645,123 @@ Digunakan untuk mengecek apakah operasi dengan suatu status yang diketahui ini d
 | flag | output pengecekan |
 
 ## Komunikasi Persisten
+Apabila diperlukan program parallel yang di dalamnya ada kegiatan looping yang memang algoritmanya menuntut seperti itu, maka komunikasi antar rank akan sering terjadi. MPI mencoba mengoptimalisasikan komunikasi yang digunakan dengan pendekatan komunikasi persisten. Semua operasi yang digunakan adalah non-blocking.
+1. Membuat permintaan persisten
+2. Memulai komunikasi transmisi
+3. Menunggu komunikasi selesai
+4. Menghapus semua objek persisten yang digunakan
+
+### Komunikasi Persisten
+
+Untuk membuat komunikasi persisten untuk pengiriman standar:
+```cpp
+MPI_Send_init()
+``` 
+
+Untuk membuat komunikasi persisten dengan mode buffer:
+```cpp
+MPI_Bsend_init()
+``` 
+
+Untuk mode sinkronus:
+```cpp
+MPI_Ssend_init()
+``` 
+
+Untuk mode ready:
+```cpp
+MPI_Rsend_init()
+```
+
+Operasi penerimaan:
+```cpp
+MPI_Recv_init()
+``` 
+
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buf| data yang akan dikirim atau diterima |
+| count| jumlah ukuran data |
+| datatype| tipe data|
+| dest| rank tujuan|
+| source| rank sumber|
+| tag| message tag 0-32767|
+| comm| communicator yang digunakan|
+| requenst| output komunikasi yang dihasilkan setelah operasi dieksekusi|
+
+### Memulai Komunikasi Transmisi
+
+``MPI_Start()`` untuk mengeksekusi objek komunikasi, ``MPI_Startall()`` untuk sekumpulan count objek komunikasi ``MPI_Request()``
+
+### Menunggu Komunikasi Selesai
+
+``MPI_Wait()`` dan ``MPI_Test()`` dapat digunakan untuk karena non-blocking.
+
+### Menghapus Semua Objek Persisten yang Digunakan
+
+``MPI_Request_free()`` digunakan untuk menghapus semua objek persisten yang digunakan.
+
+```cpp
+point2point_persisten.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[])
+{
+	int numtasks, rank, tag=999;
+	char sbuff[20], rbuff[20];
+ 
+	MPI_Status stats[2];
+	MPI_Request reqs[2];
+  
+	MPI_Init(&argc,&argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+	printf("Rank %d\r\n",rank);	
+	if (rank == 0) 
+	{
+		strcpy(sbuff,"Data dari rank 0");
+		MPI_Recv_init (&rbuff, 20, MPI_CHAR, 1, tag, 
+						MPI_COMM_WORLD, reqs);
+	    MPI_Send_init (&sbuff, 20, MPI_CHAR, 1, tag, 
+						MPI_COMM_WORLD, reqs+1);
+
+		MPI_Startall (2, reqs);
+		MPI_Waitall (2, reqs, stats);
+
+		MPI_Request_free (reqs);
+		MPI_Request_free (reqs+1);
+
+		printf("Data yang diterima di rank 0 = %s\r\n",rbuff);
+		
+	}  
+ 
+	if (rank == 1) 
+	{
+		strcpy(sbuff,"Data dari rank 1");
+		MPI_Recv_init (&rbuff, 20, MPI_CHAR, 0, tag, 
+						MPI_COMM_WORLD, &reqs[0]);
+		MPI_Send_init (&sbuff, 20, MPI_CHAR, 0, tag, 
+						MPI_COMM_WORLD, &reqs[1]);
+
+		MPI_Startall (2, reqs);
+		MPI_Waitall (2, reqs, stats);
+
+		MPI_Request_free (&reqs[0]);
+		MPI_Request_free (&reqs[1]);
+
+		printf("Data yang diterima di rank 1 = %s\r\n",rbuff);
+	}   
+
+	MPI_Finalize();
+  
+	return 0;
+} 
+
+
+```
+
