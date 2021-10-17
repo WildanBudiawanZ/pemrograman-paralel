@@ -156,7 +156,7 @@ MPI_Buffer_detach(buffer_addr, size)
 | Parameter | Keterangan  |
 | ------------- |:-------------:|
 | buffer | alamat buffer data yang akan digunakan |
-| size | ukurang jumlah buffer |
+| size | ukuran jumlah buffer |
 | buffer_addr | alamat buffer data yang digunakan |
 
 bila menggunakan ``MPI_Buffer_attach()`` dan ``MPI_Buffer_detach()`` maka proses mengirim datanya memerlukan mode buffer ``MPI_Bsend()``.
