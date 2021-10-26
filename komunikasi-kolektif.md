@@ -16,7 +16,7 @@ Variabel ``comm`` adalah communicator dari sebuah group/
 
 ``MPI_Barrier()`` akan melakukan blocking semua proses yang terjadi sampai semua proses pada group comm sudah mencapai ``MPI_Barrier()``. Setelah semua proses mencapai ``MPI_Barrier()``, proses akan dilanjutkan seperti biasa.
 
-```
+```c
 collective_barrier.c
 
 #include <mpi.h>
