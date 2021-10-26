@@ -41,3 +41,42 @@ int main(int argc, char* argv[])
 	return 0;
 }
 ```
+
+## Broadcast
+
+Operasi broadcast terjadi ketika suatu proses dalam suatu spesifik group mengirim ke seluruh proses pada spesifik group. Operasi broadcast dapat dilakukan di MPI dengan memanfaatkan ``MPI_Bcast()`` yang dideklarasikan sebagai berikut:
+```c
+int MPI_Bcast(void*, buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| buffer | Data yang akan di-broadcast pada suatu group comm |
+| count | Jumlah data |
+| datatype | Tipe data |
+| root | Rank dari broadcast |
+| comm | Communicator yang digunakan |
+
+```c
+collective_bcast.c
+#include <mpi.h>
+#include <stdio.h>
+
+int main(int argc, char* argv[]) 
+{	
+	int rank,val;
+	
+	MPI_Init( &argc, &argv );
+	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	printf("Proses rank: %d \r\n", rank);
+	
+	if(rank==0)
+		val = 100; 
+
+	MPI_Bcast( &val, 1, MPI_INT, 0, MPI_COMM_WORLD);	
+	printf("Rank %d, Total val = %d\r\n",rank,val);
+	
+	MPI_Finalize();
+	return 0;
+}
+```
