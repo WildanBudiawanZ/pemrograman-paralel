@@ -800,3 +800,174 @@ int main(int argc, char* argv[])
 
 ```
 
+## Reduce-Scatter
+
+Pada suatu kondisi dimana operasi reduksi akan di scatter ke semua proses yang ada. Hal ini dapat dilakukan dengan ``MPI_Reduce_scatter()``.
+
+```c
+int MPI_Reduce_scatter()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf | Buffer yang akan dikirim |
+| recvbuf | Buffer untuk menerima |
+| recvcounts | Jumlah data buffer|
+| datatype | Tipe data buffer|
+| op | Operasi MPI |
+| comm | Communicator yang digunakan |
+
+```c
+collective_reducescatter.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+ 
+int main( int argc, char **argv )
+{	
+	int size, rank, i;
+    int *send_data, recvbuf, *recvcounts;
+	float num;
+	
+    MPI_Init(&argc,&argv);    
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+    send_data = (int *) malloc(size* sizeof(int));	
+	recvcounts = (int *)malloc(size* sizeof(int));
+
+	printf("Rank %d send_data= ",rank);
+	srand(rank);
+    for (i=0; i<size; i++) 
+	{
+		num = (float)rand()/RAND_MAX;
+        send_data[i] = (int)(10.0*num)+1;
+		recvcounts[i] = 1;
+		printf("%d ",send_data[i]);
+	}
+	printf("\r\n");
+ 
+    MPI_Reduce_scatter(send_data, &recvbuf, recvcounts, 
+		  MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+	
+	printf("Rank %d recvbuf= %d\r\n",rank,recvbuf);    
+ 
+    MPI_Finalize( );
+    return 0;
+}
+
+```
+
+## Scan
+
+Operasi ``MPI_Scan`` digunakan untuk melakukan reduction pada data terdistribusi.
+
+```c
+int MPI_Scan()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf | Buffer yang akan dikirim |
+| recvbuf | Buffer untuk menerima |
+| counts | Jumlah data buffer|
+| datatype | Tipe data buffer|
+| op | Operasi MPI |
+| comm | Communicator yang digunakan |
+
+```c
+collective_scan.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+ 
+int main( int argc, char **argv )
+{	
+	int size,rank;
+	int data,result;    	
+	
+    MPI_Init(&argc,&argv);    
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	
+	data = rank + 1;
+	printf("Rank %d data= %d\r\n",rank,data);
+
+	MPI_Scan (&data, &result, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+ 	
+	printf("Rank %d result= %d\r\n",rank,result);    
+ 
+    MPI_Finalize( );
+    return 0;
+}
+
+
+```
+
+## Eksklusif MPI Scan
+
+``MPI_Scan()`` hanya dapat dilakukan pada lingkungan yang bukan intracommunicator. Untuk penggunaan instracommunicator dapat menggunakan ``MPI_Scan()`` yang eksklusif yakni ``MPI_Exscan()``.
+
+```c
+int MPI_Exscan()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf | Buffer yang akan dikirim |
+| recvbuf | Buffer untuk menerima |
+| counts | Jumlah data buffer|
+| datatype | Tipe data buffer|
+| op | Operasi MPI |
+| comm | Communicator yang digunakan |
+
+```c
+collective_exscan.c
+
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+ 
+int main( int argc, char **argv )
+{	
+	int size,rank; 
+    int minsize = 2, count = 5; 
+    int *sendbuf, *recvbuf, i;
+	float num;
+	
+    MPI_Init(&argc,&argv);    
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	
+	sendbuf = (int *)malloc(count*sizeof(int));
+    recvbuf = (int *)malloc(count*sizeof(int));
+
+	printf("Rank %d sendbuf= ",rank);
+	srand(rank);
+    for (i=0; i<count; i++) 
+	{
+		num = (float)rand()/RAND_MAX;
+		sendbuf[i] = (int)(10.0*num)+1;
+        recvbuf[i] = -1;
+		printf("%d ",sendbuf[i]);
+    }
+	printf("\r\n");	
+
+	MPI_Exscan( sendbuf, recvbuf, count,
+		MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+	printf("Rank %d recvbuf= ",rank);
+    for (i=0; i<count; i++) 
+	{		
+		printf("%d ",recvbuf[i]);
+    }
+	printf("\r\n");	    
+ 
+    MPI_Finalize( );
+    return 0;
+}
+
+```
