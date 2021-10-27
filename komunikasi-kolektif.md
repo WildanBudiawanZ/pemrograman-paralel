@@ -341,3 +341,214 @@ int main(int argc, char* argv[])
 
 ```
 
+## Gather-to-all
+
+Pada MPI Gather-to-all, semua proses akan menerima data.
+```c
+int MPI_Allgather()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf | Buffer yang akan dikirim |
+| sendcount | Jumlah data buffer yang dikirim |
+| sendtype | Tipe data buffer yang akan dikirim |
+| recvbuf | Buffer untuk menerima |
+| recvcount | Jumlah buffer yang diterima |
+| recvtype | Tipe buffer yang diterima |
+| comm | Communicator yang digunakan |
+
+```c
+collective_allgather.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int numnodes;
+int main(int argc, char* argv[]) 
+{	
+	int rank;
+	int *back_array;	
+	int i,data;
+	
+	MPI_Init( &argc, &argv );
+	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	MPI_Comm_size( MPI_COMM_WORLD, &numnodes );	
+		
+	data = rank + 1;
+	printf("Rank= %d, Data= %d \r\n",rank,data);
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	back_array = (int *)malloc(numnodes*sizeof(int));
+    MPI_Allgather(&data, 1, MPI_INT, 
+					back_array, 1,  MPI_INT, 
+	                MPI_COMM_WORLD);
+
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	printf("Gather>> ");
+	for(i=0;i<numnodes;i++)
+		printf("%d ",back_array[i]);
+	printf("\r\n");	
+	
+	MPI_Finalize();
+	return 0;
+}
+```
+
+## All-to-all Scatter and Gather
+
+Proses MPI all-to-all merupakan pengembangan dari MPI Gather-to-all, tetapi dapat dipilih data yang akan dikirim.
+```c
+int MPI_Alltoall()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf | Buffer yang akan dikirim |
+| sendcount | Jumlah data buffer yang dikirim |
+| sendtype | Tipe data buffer yang akan dikirim |
+| recvbuf | Buffer untuk menerima |
+| recvcount | Jumlah buffer yang diterima |
+| recvtype | Tipe buffer yang diterima |
+| comm | Communicator yang digunakan |
+
+```c
+collective_alltoall.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int numnodes;
+int main(int argc, char* argv[]) 
+{	
+	int rank,i;		
+	int *data_send,*data_recv;	
+	float num;
+	
+	MPI_Init( &argc, &argv );
+	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	MPI_Comm_size( MPI_COMM_WORLD, &numnodes );	
+
+	data_send=(int*)malloc(sizeof(int)*numnodes);
+	data_recv=(int*)malloc(sizeof(int)*numnodes);
+		
+	srand(rank);
+	for(i=0;i<numnodes;i++)
+	{
+		num = (float)rand()/RAND_MAX;
+		data_send[i]=(int)(10.0*num)+1;
+	}
+
+	printf("Rank= %d Data dikirim  =",rank);
+	for(i=0;i<numnodes;i++)
+		printf("%d ",data_send[i]);
+	printf("\r\n");
+	
+	MPI_Alltoall(data_send,1,MPI_INT,
+			      data_recv,1,MPI_INT,
+	              MPI_COMM_WORLD);
+
+	printf("Rank= %d Data diterima =",rank);
+	for(i=0;i<numnodes;i++)
+		printf("%d ",data_recv[i]);
+	printf("\r\n");
+	
+	MPI_Finalize();
+	return 0;
+}
+```
+
+
+## Operasi All-to-Allv
+
+Operasi all-to-allv sama seperti all-to-all, namun operasi all-to-allv memberikan fleksibilitas terhadap lokasi data yang diterima.
+```c
+int MPI_Alltoallv()
+```
+
+```c
+collective_alltoallv.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int numnodes;
+int main(int argc, char* argv[]) 
+{	
+	int rank,i;	
+	float num;
+	int *sray,*rray;
+	int *sdisp,*send_data,*rdisp,*recv_data;
+	int ssize,rsize;
+	
+	MPI_Init( &argc, &argv );
+	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	MPI_Comm_size( MPI_COMM_WORLD, &numnodes );	
+	
+	send_data=(int*)malloc(sizeof(int)*numnodes);
+	recv_data=(int*)malloc(sizeof(int)*numnodes);
+	sdisp=(int*)malloc(sizeof(int)*numnodes);
+	rdisp=(int*)malloc(sizeof(int)*numnodes);
+		
+	srand(rank);
+	for(i=0;i<numnodes;i++)
+	{
+		num = (float)rand()/RAND_MAX;
+		send_data[i]=(int)(10.0*num)+1;
+	}
+
+	printf("rank= %d, send_data= ",rank);
+	for(i=0;i<numnodes;i++)
+		printf("%d ",send_data[i]);
+	printf("\r\n");
+
+	MPI_Alltoall(send_data,1,MPI_INT,
+					recv_data,1,MPI_INT,
+	                MPI_COMM_WORLD);
+
+	printf("rank= %d, recv_data= ",rank);
+	for(i=0;i<numnodes;i++)
+		printf("%d ",recv_data[i]);
+	printf("\r\n");
+	sdisp[0]=0;
+	for(i=1;i<numnodes;i++)
+	{
+		sdisp[i]=send_data[i-1]+sdisp[i-1];
+	}
+	rdisp[0]=0;
+	for(i=1;i<numnodes;i++)
+	{
+		rdisp[i]=recv_data[i-1]+rdisp[i-1];
+	}
+	ssize=0;
+	rsize=0;
+	for(i=0;i<numnodes;i++)
+	{
+		ssize=ssize+send_data[i];
+		rsize=rsize+recv_data[i];
+	}
+
+	sray=(int*)malloc(sizeof(int)*ssize);
+	rray=(int*)malloc(sizeof(int)*rsize);
+
+	for(i=0;i<ssize;i++)
+		sray[i]=rank;
+
+	MPI_Alltoallv(sray,send_data,sdisp,MPI_INT,
+				    rray,recv_data,rdisp,MPI_INT,
+	                MPI_COMM_WORLD);
+	                
+	printf("Rank= %d, rray= ",rank);
+	for(i=0;i<rsize;i++)
+		printf("%d ",rray[i]);
+	printf("\r\n");
+	
+	MPI_Finalize();
+	return 0;
+}
+```
+
