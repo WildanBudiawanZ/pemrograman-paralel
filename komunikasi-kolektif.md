@@ -10,7 +10,7 @@ Komunikasi kolektif dapat didefinisikan sebagai sebuah komunikasi yang melibatka
 
 Komunikasi yang terjadi di MPI sangat kompleks terlebih bila kita bekerja pada asinkronus. Oleh karena itu, kita memerlukan sinkronisasi antar proses yang terjadi. Hal ini dapat dilakukan dengan menggunakan ``MPI_Barrier()`` yang dideklarasikan sebagai berikut:
 
-```
+```c
 int MPI_Barrier(MPI_Comm comm)
 ```
 
@@ -82,3 +82,97 @@ int main(int argc, char* argv[])
 	return 0;
 }
 ```
+
+## Gather and Scatter
+
+Gather adalah proses pengambilan data dari semua proses ke suatu proses pada spesifik komunikator. Sedangkan Scatter adalah proses pengiriman data dari satu proses ke semua proses pada spesifik komunikator.
+Gather:
+```c
+int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf | Buffer yang akan dikirim |
+| sendcount | Jumlah data buffer yang dikirim |
+| sendtype | Tipe data buffer yang akan dikirim |
+| recvbuf | Buffer untuk menerima |
+| recvcount | Jumlah buffer yang diterima |
+| recvtype | Tipe buffer yang diterima |
+| root | Rank yang menerima |
+| comm | Communicator yang digunakan |
+
+Scatter:
+```c
+int MPI_Scatter(void* sendbuf, int sendcount, MPI_Datatype sendtype, void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf | Buffer yang akan dikirim |
+| sendcount | Jumlah data buffer yang dikirim |
+| sendtype | Tipe data buffer yang akan dikirim |
+| recvbuf | Buffer untuk menerima |
+| recvcount | Jumlah buffer yang diterima |
+| recvtype | Tipe buffer yang diterima |
+| root | Rank yang menerima |
+| comm | Communicator yang digunakan |
+
+```c
+collective_scatter_gather.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int numnodes;
+int main(int argc, char* argv[]) 
+{	
+	int rank;
+	int *myray,*send_array,*back_array;
+	int count;
+	int size,i,total;
+	
+	MPI_Init( &argc, &argv );
+	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	MPI_Comm_size( MPI_COMM_WORLD, &numnodes );
+	
+	count=10;
+	size=count*numnodes;
+	myray=(int*)malloc(count*sizeof(int));
+	send_array=(int*)malloc(size*sizeof(int));
+	back_array=(int*)malloc(numnodes*sizeof(int));
+
+	if(rank==0)
+	{		
+		for(i=0;i<size;i++)
+			send_array[i]=i;
+	}
+	
+	MPI_Scatter(send_array, count,MPI_INT,
+			        myray, count,MPI_INT,
+	                0, MPI_COMM_WORLD);
+
+	total=0;
+	for(i=0;i<count;i++)
+		total=total+myray[i];
+
+	printf("Rank= %d Total= %d \r\n",rank,total);
+
+    MPI_Gather(&total, 1, MPI_INT, 
+					back_array, 1,  MPI_INT, 
+	                0, MPI_COMM_WORLD);
+	if(rank == 0)
+	{
+		total=0;
+		for(i=0;i<numnodes;i++)
+			total = total + back_array[i];
+
+		printf("Total dari proses= %d \r\n ",total);
+	}
+	
+	MPI_Finalize();
+	return 0;
+}
+```
+
