@@ -576,6 +576,7 @@ typedef int MPI_Op
 ```
 
 Operasi reduksi ``MPI_Op`` yang dapat digunakan yakni:
+
 | Operasi Reduksi MPI_Op | Keterangan  |
 | ------------- |:-------------:|
 | MPI_MAX | Maksimum |
@@ -641,3 +642,161 @@ int main(int argc, char* argv[])
 	return 0;
 }
 ```
+
+### Operasi All-Reduction
+
+Bila ``MPI_Reduce`` hanya 1 rank atau proses yang menerima data, maka ``MPI_Allreduce`` semua rank dapat memperoleh hasil operasi reduksi ini.
+
+```c
+int MPI_Allreduce()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| sendbuf | Buffer yang akan dikirim |
+| recvbuf | Buffer untuk menerima |
+| count | Jumlah data buffer|
+| datatype | Tipe data buffer|
+| op | Operasi MPI |
+| comm | Communicator yang digunakan |
+
+```c
+collective_allreduce.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[])
+{
+    int N = 5;
+    int *in, *out;
+    int i,rank,size;    
+	float num;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    in = (int *)malloc(N * sizeof(int));
+    out = (int *)malloc(N * sizeof(int));
+    
+	printf("Rank %d in= ",rank);
+	srand(rank);
+    for (i=0; i<N; i++)
+    {
+		num = (float)rand()/RAND_MAX;
+        in[i] = (int)(10.0*num)+1;       
+		printf("%d ",in[i]);
+    }
+	printf("\r\n");
+
+    MPI_Allreduce(in,out, N, MPI_INT, MPI_SUM, MPI_COMM_WORLD );
+
+	printf("Rank %d out= ",rank);
+    for (i=0; i<N; i++)
+    {		
+		printf("%d ",out[i]);    
+    }
+	printf("\r\n");
+    
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
+### Customize Operasi Reduksi
+
+Pada MPI, Pengembang dimungkinkan untuk membuat operasi ``MPI_Op`` sendiri menggunakan ``MPI_Op_create()``
+
+```c
+int MPI_Op_create()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| function | Fungsi yang akan dieksekusi untuk operasi MPI_Op |
+| commute | Bernilai true juka coomulative atau sebaliknya |
+| op | Operasi MPI_Op |
+
+bila sudah tidak digunakan lagi ``MPI_Op`` sebaiknya dihapus dengan ``MPI_Op_free()``.
+
+```c
+collective_reduce_custom.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int numnodes,rank;
+typedef struct
+{
+	double real,imag;
+} Complex;
+
+void complex_comp(Complex *in, Complex *inout, int *len, MPI_Datatype *dptr);
+void complex_comp(Complex *in, Complex *inout, int *len, MPI_Datatype *dptr)
+{
+	int i;
+	Complex c;
+
+	for(i=0; i<*len;++i)
+	{
+		c.real = ((*in).real*(*inout).real) - ((*in).imag*(*inout).imag);
+		c.imag = ((*in).real*(*inout).imag) + ((*in).imag*(*inout).real);
+
+		*inout = c;
+		in++;
+		inout++;
+	}
+	
+}
+
+int main(int argc, char* argv[]) 
+{		
+	int i;
+	double num;
+	Complex a[5],answer[5];	
+	MPI_Op op;
+	MPI_Datatype ctype;
+
+	MPI_Init( &argc, &argv );	
+
+	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	MPI_Comm_size( MPI_COMM_WORLD, &numnodes );	
+
+	MPI_Type_contiguous(2,MPI_DOUBLE,&ctype);
+	MPI_Type_commit(&ctype);
+	
+	MPI_Op_create((MPI_User_function*)complex_comp,1,&op);
+	
+	srand(rank);
+	for(i=0;i<5;i++)
+	{
+		num = (double)rand()/RAND_MAX;
+		a[i].real = num;
+		num = (double)rand()/RAND_MAX;
+		a[i].imag = num;		
+	}
+	
+	MPI_Reduce(a, answer, 5, ctype, op, 0, MPI_COMM_WORLD);
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if(rank == 0)
+	{
+		for(i=0;i<numnodes;i++)
+		{
+			printf("%d real= %f imag = %f \r\n",i+1,
+				answer[i].real,answer[i].imag);
+		}
+	}
+	
+	MPI_Op_free(&op);
+	MPI_Finalize();
+	return 0;
+}
+
+
+```
+
