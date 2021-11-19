@@ -135,7 +135,7 @@ Setiap communicator yang dieksekusi akan mempunyai satu atau lebih group. Untuk 
 Group yang telah diperoleh dapat diketahui size ataupun rank dengan menggunakan ``MPI_Group_size()`` dan ``MPI_Group_rank()``.
 
 ```c++
-comm_group_info.c
+group_info.c
 
 #include <mpi.h>
 #include <stdio.h>
@@ -165,6 +165,214 @@ int main( int argc, char **argv )
     }
 	printf("rank %d, size=%d, grp_rank=%d, grp_size=%d\r\n",rank,size,grp_rank,grp_size);
   
+    MPI_Finalize();
+    return 0;
+}
+
+
+```
+
+### Operasi Group
+
+Pada group MPI, kita juga dapat melakukan operasi seperti membandingkan suatu group dengan group lainnya menggunakan 
+```c++
+MPI_Group_compare(MPI_Group group1, MPI_Group group2, int *result )
+
+MPI_Group_translate(MPI_Group group1, int n, int *ranks1, MPI_Group group2, int *ranks2 )
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| group1 |group pertama |
+| group2| group kedua|
+| n| jumlah rank pada rank1 dan rank2 dalam bentuk array|
+| rank1| array rank1|
+| rank2| output array rank2|
+
+Operasi ``MPI_Group_compare()`` digunakan untuk membandingkan kedua group. Output yang diperoleh pada operasi ini adalah:
+1. MPI_IDENT, dua group sama
+2. MPI_SIMILAR, dua group sama tetapi urutannya berbeda
+3. MPI_UNEQUAL, dua group tidak sama
+
+Sedangkan operasi ``MPI_Group_translate_ranks()`` digunakan untuk menentukan relativitas kedua group MPI.
+
+```c++
+group_operation.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+ 
+int main( int argc, char **argv )
+{
+    MPI_Group basegroup;
+    MPI_Group g1, g2, g3;
+    MPI_Comm comm, newcomm, splitcomm, dupcomm;
+    int i, rank, size, result;
+    int nranks, *ranks, *ranks_out;
+
+ 
+    MPI_Init( &argc, &argv );
+    comm = MPI_COMM_WORLD;
+    MPI_Comm_group(comm, &basegroup );
+    MPI_Comm_rank(comm, &rank );
+    MPI_Comm_size(comm, &size );
+
+	MPI_Comm_split(comm, 0, size - rank, &newcomm );
+    MPI_Comm_group(newcomm, &g1 );
+
+    ranks = (int *)malloc( size * sizeof(int) );
+    ranks_out = (int *)malloc( size * sizeof(int) );
+
+    for (i=0; i<size; i++) 
+		ranks[i] = i;
+    nranks = size;
+    MPI_Group_translate_ranks( g1, nranks, ranks, basegroup, ranks_out );
+    for (i=0; i<size; i++) 
+	{
+        printf("Translate ranks=  %d Translate ranks original= %d\r\n",
+					ranks_out[i], (size-1) - i );
+    }
+
+	MPI_Group_compare( basegroup, g1, &result );
+    if (result != MPI_SIMILAR) 
+		printf("Group tidak sama. Nilai %d\r\n", result);
+	else
+		printf("Group sama untuk %d\r\n", result);
+
+    MPI_Comm_dup( comm, &dupcomm );
+    MPI_Comm_group( dupcomm, &g2 );
+    MPI_Group_compare( basegroup, g2, &result );
+
+    if (result != MPI_IDENT) 
+		printf("Group tidak sama %d\r\n", result);
+	else
+		printf("Group sama untuk result= %d\r\n",result);
+
+    MPI_Comm_split(comm, rank < size/2, rank, &splitcomm );
+    MPI_Comm_group(splitcomm, &g3 );
+    MPI_Group_compare( basegroup, g3, &result );
+    if (result != MPI_UNEQUAL) 
+		printf("Group tidak unequal. Nilai %d\r\n", result);
+	else
+		printf("Group unequal. Nilai %d\r\n", result);
+  
+    MPI_Finalize();
+    return 0;
+}
+
+
+```
+
+## Inter Communicator
+
+Inter-communicator adalah komunikasi point-to-point antar proses yang berbeda group. Sedangkan bila komunikasi terjadi pada proses di dalam group yang sama disebut sebagai intra-communicator. Untuk menguji apakah komunikasi bekerja pada inter-communicator atau tidak, kita dapat memanfaatkan fungsi ``MPI_Comm_test_inter()`` dengan parameter sebagai berikut:
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| comm|communicator |
+| flag| output flag, bernilai 1 jika inter-communication dan sebaliknya merupakan intra-communication|
+
+```c++
+intercomm_test.c
+
+#include <mpi.h>
+#include <stdio.h>
+
+int main(int argc, char* argv[] )
+{    
+	int flag;
+
+    MPI_Init(&argc, &argv);
+	MPI_Comm_test_inter(MPI_COMM_WORLD,&flag);
+
+	if(flag==1)
+		printf("inter-communicator \r\n");
+	else
+		printf("intra-communicator \r\n");   
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
+Selain fungsi ``MPI_Comm_test_inter()``, ada juga fungsi untuk memeriksa nilai size dan group dari sebuah remote communicator.
+```c++
+
+int MPI_Comm_remote_size(MPI_Comm comm, int *size)
+int MPI_Comm_remote_group(MPI_Comm comm, MPI_Group *group)
+int MPI_Intercomm_create(MPI_Comm local_comm, int local_leader, MPI_Comm peer_comm, int remote_leader, int tag, MPI_Comm *newintercomm)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| local_comm| lokal intra-communicator |
+| local_leader| rank lokal group leader di dalam local_comm|
+| peer_comm| peer_communicator|
+| remote_leader| rank lokal group leader di dalam peer_comm|
+| tag| tag|
+| newintercomm| communicator baru dengan inter-communication |
+
+```c++
+intercomm_create.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define BUFSIZE 2000
+int main( int argc, char *argv[] )
+{
+    MPI_Status status;
+    MPI_Comm comm,scomm;
+    int a[5], b[10];
+    int i, j, rank,rank_old,rank_new, size, color;
+	float num;
+	int buf[BUFSIZE];
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	rank_old = rank;
+    color = rank % 2;
+
+    MPI_Comm_split( MPI_COMM_WORLD, color, rank, &scomm );
+    MPI_Intercomm_create(scomm, 0, MPI_COMM_WORLD, 1-color, 52, &comm);
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_remote_size(comm, &size );
+	MPI_Comm_rank(scomm, &rank_new );
+    
+	MPI_Buffer_attach(buf, BUFSIZE );
+
+	srand(rank);
+	printf("Rank lama= %d Rank baru= %d a= ",rank_old,rank_new);
+    for (i=0; i<5; i++) 
+	{
+		num = (float)rand()/RAND_MAX;
+		a[i] = (int)(10.0*num)+1;
+		printf("%d ",a[i]);
+    }
+	printf("\r\n\r\n");
+
+    MPI_Bsend(a, 5, MPI_INT, 0, 99, comm );
+
+    if (rank == 0) 
+	{
+        for (i=0; i<size; i++) 
+		{
+            MPI_Recv(b, 5, MPI_INT, i, 99, comm, &status);
+			printf("Rank lama= %d Rank baru= %d source %d b= ",rank_old,rank_new,status.MPI_SOURCE);
+			for (j=0; j<5; j++) 
+			{				
+				printf("%d ",b[j]);
+			}
+			printf("\r\n");
+        }
+		printf("\r\n");
+    }
+
+
+
     MPI_Finalize();
     return 0;
 }
