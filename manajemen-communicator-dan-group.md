@@ -380,3 +380,155 @@ int main( int argc, char *argv[] )
 
 ```
 
+## Caching
+
+MPI menyediakan fasilitas caching yang memungkinkan aplikasi menyimpan suatu data berdasarkan atribut key. Kita dapat membuatnya dengan memanfaatkan fungsi ``MPI_Comm_create_keyval()`` dengan parameter sebagai berikut:
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| comm_copy_attr_fn|fungsi copy callback untuk comm_keyval |
+| comm_delete_attr_fn|fungsi delete callback untuk comm_keyval |
+| comm_keyval|key dan value |
+| extra_state|ekstra state untuk fungsi callback |
+
+Setelah membuat data berdasarkan key, hapus menggunakan ``MPI_Comm_free_keyval()``
+
+Operasi yang dapat dilakukan adalah memberikan nilai, mendapatkan nilai, dan menghapus nilai berdasarkan key sebagai menggunakan method berikut:
+
+```c++
+
+int MPI_Comm_set_attr(MPI_Comm comm, int comm_keyval, void *attribute_val)
+int MPI_Comm_get_attr(MPI_Comm comm, int comm_keyval, void *attribute_val, int *flag)
+int MPI_Comm_delete_attr(MPI_Comm comm, int comm_keyval)
+```
+
+```c++
+caching.c
+
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void check_attributes(MPI_Comm comm, int n, int key[], int attrval[]);
+void check_no_attributes(MPI_Comm comm, int n, int key[]);
+
+int main(int argc, char* argv[] )
+{    
+	int key[3], attrval[3];    
+	int i,rank;
+	float num;
+    MPI_Comm comm;
+
+	comm = MPI_COMM_WORLD;
+    MPI_Init(&argc, &argv);
+	MPI_Comm_rank(comm, &rank );	
+
+	printf("Rank %d (key,val)= ", rank);
+	srand(rank);
+    for (i=0; i<2; i++) 
+	{
+		num = (float)rand()/RAND_MAX;
+        MPI_Comm_create_keyval(MPI_NULL_COPY_FN, MPI_NULL_DELETE_FN, &key[i], (void *)0 );
+        attrval[i] = (int)(10.0*num)+1;
+		printf("(%d,%d) ",key[i],attrval[i]);
+    }
+	printf("\r\n");
+
+    MPI_Comm_set_attr(comm, key[1], &attrval[1]);
+    MPI_Comm_set_attr(comm, key[0], &attrval[0]);
+    check_attributes(comm, 2, key, attrval);
+
+    MPI_Comm_delete_attr(comm, key[0]);
+    MPI_Comm_delete_attr(comm, key[1]);
+    check_no_attributes(comm, 2, key);
+  
+	for (i=0; i<2; i++) 
+	{
+        MPI_Comm_free_keyval(&key[i]);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+
+void check_attributes(MPI_Comm comm, int n, int key[], int attrval[])
+{
+    int i, flag, *val_p;
+    for (i=0; i<n; i++) 
+	{
+        MPI_Comm_get_attr(comm, key[i], &val_p, &flag );
+        if (!flag) 
+		{           
+            printf("Attribute key %d tidak diset\r\n", i);
+        }
+        else 
+			if (val_p != &attrval[i]) 
+			{				
+				printf("Nilai Atribute key %d tidak benar\r\n", i);
+			}
+    }
+}
+
+void check_no_attributes(MPI_Comm comm, int n, int key[])
+{
+    int i, flag, *val_p;
+    for (i=0; i<n; i++) 
+	{
+        MPI_Comm_get_attr(comm, key[i], &val_p, &flag );
+        if (flag) 
+		{
+            printf("Attribute key %d diset tetapi seharusnya dihapus\r\n", i);
+        }
+    }
+
+}
+
+```
+
+## Penamaan Objek
+
+Kadang kala kita ingin mempunyai communicator dan datatype yang dapat disesuaikan. Di dalam MPI, kita dapat melakukan penyesuaian nama MPI communicator dengan fungsi berikut:
+```c++
+int MPI_Comm_set_name(MPI_Comm comm, char *comm_name)
+int MPI_Comm_get_name(MPI_Comm comm, char *comm_name, int *resultlen)
+```
+
+sedangkan untuk datatype sebagai berikut:
+
+```c++
+int MPI_Type_set_name(MPI_Datatype type, char *type_name)
+int MPI_Type_get_name(MPI_Datatype type, char *type_name, int *resultlen)
+```
+
+```c++
+naming.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main( int argc, char *argv[] )
+{
+    int rlen;
+    char name[MPI_MAX_OBJECT_NAME], nameout[MPI_MAX_OBJECT_NAME];
+
+    MPI_Init( &argc, &argv );
+
+    nameout[0] = 0;
+    MPI_Comm_get_name(MPI_COMM_WORLD, nameout, &rlen );
+    printf( "Nama MPI_COMM_WORLD: %s\r\n", nameout );    
+
+    strcpy(name, "MPI_COMM_NUSANTARA" );
+    MPI_Comm_set_name(MPI_COMM_WORLD, name);
+
+    nameout[0] = 0;
+    MPI_Comm_get_name( MPI_COMM_WORLD, nameout, &rlen );
+    printf( "Nama MPI_COMM_WORLD baru: %s\r\n", nameout );    
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
