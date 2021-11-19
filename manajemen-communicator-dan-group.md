@@ -67,3 +67,108 @@ int main(int argc, char* argv[] )
 }
 
 ```
+
+### Split Communicator
+
+Kadang kala kitaingin membagi beberapa group di dalam suatu communicator dimana masing-masing hasil pembagian ini ditandai dengan sebuat identitas, yaitu color dan key. Realisasinya, kita menggunakan ``MPI_Comm_split()`` yang dideklarasikan sebagai berikut:
+```c++
+int MPI_Comm_split()
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| comm | communicator |
+| color | identitas color |
+| key | identitas key |
+| newcomm | communicator baru |
+
+```c++
+comm_split.c
+
+#include <mpi.h>
+#include <stdio.h>
+
+int main(int argc, char* argv[] )
+{
+    int rank, numprocs;
+	int comm_split,Zero_one,new_rank,new_nodes;
+	MPI_Comm NEW_COMM;
+
+	MPI_Init(&argc,&argv);
+	MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+	comm_split=rank % 2;
+	MPI_Comm_split(MPI_COMM_WORLD,comm_split,rank,&NEW_COMM );
+	MPI_Comm_rank(NEW_COMM, &new_rank);
+	MPI_Comm_size(NEW_COMM, &new_nodes);
+
+	Zero_one = -1;
+	if(new_rank==0)
+		Zero_one = comm_split;
+	MPI_Bcast(&Zero_one,1,MPI_INT,0, NEW_COMM);
+
+	if(Zero_one==0)
+		printf("Rank %d,Bagian genap processor communicator \n",rank);
+	if(Zero_one==1)
+		printf("Rank %d,Bagian ganjil processor communicator \n",rank);
+
+	printf("id lama= %d id baru= %d\n", rank, new_rank);
+   
+    MPI_Finalize();
+    return 0;
+}
+
+
+```
+
+## Manajemen Group
+
+### Informasi Group
+Setiap communicator yang dieksekusi akan mempunyai satu atau lebih group. Untuk memperoleh informasi group yang dimiliki sebuah komunikator, kita dapat menggunakan ``MPI_Comm_group()`` dengan parameter sebagai berikut:
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+| comm | communicator |
+| group | output group dari comm |
+
+Group yang telah diperoleh dapat diketahui size ataupun rank dengan menggunakan ``MPI_Group_size()`` dan ``MPI_Group_rank()``.
+
+```c++
+comm_group_info.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+ 
+int main( int argc, char **argv )
+{
+    MPI_Group basegroup;
+	MPI_Comm comm;
+    int grp_rank, rank, grp_size, size;
+ 
+    MPI_Init( &argc, &argv );
+    comm = MPI_COMM_WORLD;
+    MPI_Comm_group(comm, &basegroup );
+    MPI_Comm_rank(comm, &rank );
+    MPI_Comm_size(comm, &size );
+ 
+    MPI_Group_rank(basegroup, &grp_rank );
+    if (grp_rank != rank) 
+	{        
+        printf("group rank %d != comm rank %d\n", grp_rank, rank );
+    }
+    MPI_Group_size(basegroup, &grp_size );
+    if (grp_size != size) 
+	{        
+        printf("group size %d != comm size %d\n", grp_size, size );
+    }
+	printf("rank %d, size=%d, grp_rank=%d, grp_size=%d\r\n",rank,size,grp_rank,grp_size);
+  
+    MPI_Finalize();
+    return 0;
+}
+
+
+```
+
