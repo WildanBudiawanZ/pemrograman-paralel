@@ -205,3 +205,247 @@ int main( int argc, char *argv[] )
 
 ```
 
+## Topologi graph
+
+### Membuat topologi graph
+
+Kita dapat membuat virtual topologi graph dengan memanfaatkan fungsi ``MPI_Graph_create()`` dengan parameter sebagai berikut:
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|comm_old|input communicator|
+|nnodes|jumlah nodes|
+|index|array integer untuk derajat node|
+|edges|array integer untuk edge|
+|reorder|ranking akan diurutkan atau tidak|
+|comm_graph|communicator baru untuk topologi graph|
+
+```c++
+//graph_create.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[])
+{
+    int i, k;
+    int size,rank;
+    int topo_type;
+    int *index, *edges;
+    MPI_Comm comm1, comm2;
+
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+	index = (int*)malloc(rank*sizeof(int));
+	edges = (int*)malloc(rank*2*sizeof(int));
+		
+	index[0] = 2;
+	for (i=1; i<size; i++) 
+		index[i] = 2 + index[i-1];
+
+	k=0;
+	for (i=0; i<size; i++) 
+	{
+		edges[k++] = (i-1+size) % size;
+		edges[k++] = (i+1) % size;
+	}
+
+	MPI_Graph_create(MPI_COMM_WORLD, size, index, edges, 0, &comm1);
+	MPI_Comm_dup(comm1, &comm2 );
+	MPI_Topo_test(comm2, &topo_type);
+
+	if (topo_type != MPI_GRAPH) 
+		printf("Tipe topology bukan MPI_GRAPH\r\n");
+	else 
+		printf("Tipe topology MPI_GRAPH\r\n");
+
+	    
+    MPI_Finalize();
+
+    return 0;
+}
+
+
+```
+
+## Topologi distribusi
+
+Virtual topologi terakhir adalah virtual topologi distribusi. Realisasi untuk membuat topologi distribusi, kita dapat menggunakan fungsi ``MPI_Dist_graph_create()``.
+
+```c++
+int MPI_Dist_graph_create(MPI_Comm comm_old, int n, int sources[]. int degrees[], int destinations[], int weights[], MPI_Info info, int reorder, MPI_Comm *comm_dist_graph)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|comm_old| input communicator|
+|n|jumlah source node|
+|sources|array yang berisi n source node dengan spesifik edge|
+|degrees| array jumlah destination untuk masing-masing source node|
+|destinations|tujan dari source node|
+|weights|bobot untuk source node ke destination edge|
+|info|informasi optimasiasi dari bobot|
+|reorder|proses akan diurutkan atau tidak|
+|comm_dist_graph|communicator yang menghasilkan topologi distribusi|
+
+```c++
+//distgraph_create.c
+
+// KODE PROGRAM ini menggunakan MPICH2
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[])
+{
+    int size,rank;
+    int topo_type;
+    MPI_Comm comm1, comm2;
+	int  x, y;
+	int sources[1], degrees[1];
+	int destinations[8], weights[8];
+
+	int P = 2,Q = 2; // size = P*Q
+
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+	y=rank%P; x=rank%P;
+	destinations[0] = P*y+(x+1)%P; weights[0] = 2;
+	destinations[1] = P*y+(P+x-1)%P; weights[1] = 2;
+
+	destinations[2] = P*((y+1)%Q)+x; weights[2] = 2;
+	destinations[3] = P*((Q+y-1)%Q)+x; weights[3] = 2;
+
+	destinations[4] = P*((y+1)%Q)+(x+1)%P; weights[4] = 1;
+	destinations[5] = P*((Q+y-1)%Q)+(x+1)%P; weights[5] = 1;
+	destinations[6] = P*((y+1)%Q)+(P+x-1)%P; weights[6] = 1;
+	destinations[7] = P*((Q+y-1)%Q)+(P+x-1)%P; weights[7] = 1;
+	sources[0] = rank;
+	degrees[0] = 8;
+		
+	MPI_Dist_graph_create(MPI_COMM_WORLD, 1, sources, degrees, destinations,
+			weights, MPI_INFO_NULL, 1, &comm1);
+	MPI_Comm_dup(comm1, &comm2 );
+	MPI_Topo_test(comm2, &topo_type);
+
+	if (topo_type != MPI_GRAPH) 
+		printf("Tipe topology bukan MPI_GRAPH\r\n");
+	else 
+		printf("Tipe topology MPI_GRAPH\r\n");
+	    
+    MPI_Finalize();
+
+    return 0;
+}
+
+
+```
+
+## Pengujian dan testing
+
+Pada section ini kita akan melakukan pengujian dan testing terhadap virtual topologi yang telah dibuat. Pengujian pertama adalah menentukan jenir virtual topologi pada sebuah communicator. Caranya dengan menggunakan fungsi ``MPI_Topo_test()``.
+
+```c++
+int MPI_Topo_test(MPI_Comm comm, int *status)
+```
+
+Nilai status merupakan output dari fugnsi ini, beberapa outptu yang didefinisi sebagai virtual topologi dapat dilihat pada tabel berikut:
+| Output | Keterangan  |
+| ------------- |:-------------:|
+|MPI_GRAPH|Topologi graph|
+|MPU_CART|Topologi kartesian|
+|MPI_DIST_GRAPH|Topologi distribusi|
+|MPI_UNDEFINED|Tidak ada topologi|
+
+### Pengujian topologi kartesian
+
+Pada topologi kartesian, kita dapat melakukan pengujian yang memang sudah disediakan oleh MPI. Pengujian pertama adalah memperoleh jumlah dimensi. Hal ini dapat dilakukan dengan ``MPI_Cartdim_get()`` dan ``MPI_Cart_get()``.
+
+```c++
+int MPI_Cartdim_get(MPI_Comm comm, int *ndims)
+
+int MPI_Cart_get(MPI_Comm comm, int maxdims, int *dims, int *periodes, int *coords)
+```
+Fungsi mengembalikan jumlah dimensi dari sebuah communicator berbasis topologi kartesian.
+
+Pengujian kedua, kita dapat memperoleh rank dari input koordinasi pada topologi kartesian. Ini dapat dilakukan dengan menggunakan fungsi ``MPI_Cart_rank()`` yang dideklarasikan sebagai berikut:
+
+int MPI_Cart_rank(MPI_Comm comm, int *cords, int *rank)
+
+Pengujian terakhir, kita ingin memperoleh koordinasi pada topologi kartesian dari input rank. Hal ini dapat dilakukan ``MPI_Cart_coords()`` yang dideklarasikan sebagai berikut:
+```c++
+int MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int *coords)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|comm|input communicator|
+|rank|rank|
+|maxdims|panjang koordinasi|
+|coords|output koordinasi|
+
+```c++
+//cartesian_test.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[])
+{
+	int i,topo_type;
+    int dims[2], periods[2], size,rank;
+    int coord[2],outdims[2], outperiods[2], outcoords[2];    
+    int *outindex, *outedges;
+    MPI_Comm comm1, comm2;
+
+    MPI_Init( &argc, &argv );
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size( MPI_COMM_WORLD, &size );
+   
+    dims[0] = dims[1] = 0;
+    MPI_Dims_create(size, 2, dims);
+
+    periods[0] = periods[1] = 0;
+    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 0, &comm1);
+    MPI_Comm_dup( comm1, &comm2 );
+
+	MPI_Cart_coords(comm2, rank, 2, coord);
+	printf("Rank %d posisi(%d, %d)\r\n", rank, coord[0], coord[1]);
+
+    MPI_Topo_test( comm2, &topo_type );  
+	if (topo_type == MPI_CART)
+    {
+		outindex = (int*)malloc(size*sizeof(int));
+		outedges = (int*)malloc(size*2*sizeof(int));
+
+        MPI_Cart_get( comm2, 2, outdims, outperiods, outcoords);
+        for (i=0; i<2; i++) 
+		{
+            if (outdims[i] != dims[i]) 
+				printf("Rank %d -->%d = outdims[%d] != dims[%d] = %d\n",rank, outdims[i], i, i, dims[i] );
+			else
+				printf("Rank %d -->%d = outdims[%d] == dims[%d] = %d\n", rank,outdims[i], i, i, dims[i] );
+
+            if (outperiods[i] != periods[i]) 
+				printf("Rank %d -->%d = outperiods[%d] != periods[%d] = %d\n", rank,outperiods[i], i, i, periods[i]);
+			else
+				printf("Rank %d -->%d = outperiods[%d] == periods[%d] = %d\n", rank,outperiods[i], i, i, periods[i]);
+        }
+    }
+	    
+    MPI_Finalize();
+
+    return 0;
+}
+
+
+```
+
