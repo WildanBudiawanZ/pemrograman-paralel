@@ -1,6 +1,6 @@
 # Manajemen Communicator dan Group
 
-Sumber : Agus Kurniawan. 2010. Pemrograman Paralel dengan MPI dan C. Andi (121-169)
+Sumber : Agus Kurniawan. 2010. Pemrograman Paralel dengan MPI dan C. Andi (171-195)
 
 ## Manajemen Communicator
 
