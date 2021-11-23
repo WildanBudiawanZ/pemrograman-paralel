@@ -1,6 +1,6 @@
 # Topologi Virtual
 
-Sumber : Agus Kurniawan. 2010. Pemrograman Paralel dengan MPI dan C. Andi (121-169)
+Sumber : Agus Kurniawan. 2010. Pemrograman Paralel dengan MPI dan C. Andi (197-226)
 
 ## Apakah itu Topologi Virtual
 
