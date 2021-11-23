@@ -547,3 +547,108 @@ int main(int argc, char *argv[])
 
 ```
 
+## Fungsi low-level pada topologi
+
+MPI menyediakan beberapa fungsi yang dapat langsung dipanggil pada sebuah virtual topologi. Beberapa fungsi yang dapat digunakan adalah ``MPI_Cart_map()`` untuk topologi kartesian dan ``MPI_Graph_map()`` untuk topologi graph.
+
+```c++
+int MPI_Cart_map(MPI_Comm comm, int ndims, int *dims, int *period, int *newrank)
+
+int MPI_Graph_map(MPI_Comm comm, int nnodes, int *index, int *edges, int *newrank)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|comm|input communicator|
+|ndims|jumlah dimensi topologi kartesian|
+|periods|jumlah proses pada masing-masing ndims|
+|newrank|output rank baru|
+|nndones|jumlah edge node|
+|index|array integer untuk struktur graph|
+|edges|array integer edge untuk struktur graph|
+
+### Demo topologi kartesian
+```c++
+//cartesian_map.c
+#include <mpi.h>
+#include <stdio.h>
+
+
+int main( int argc, char *argv[] )
+{    
+    int dims[2];
+    int periods[2];
+    int size, rank, newrank;
+
+    MPI_Init( &argc, &argv );
+    MPI_Comm_size( MPI_COMM_WORLD, &size );
+    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+   
+    periods[0] = 1;
+    dims[0] = 1;
+    MPI_Cart_map(MPI_COMM_WORLD, 1, dims, periods, &newrank );
+    if (rank > 0) 
+	{
+        if (newrank != MPI_UNDEFINED) 
+			printf("newrank %d bukan UNDEFINED\r\n",newrank);
+		else
+			printf("newrank %d UNDEFINED\r\n",newrank);
+    }
+    else 
+	{
+        if (rank != newrank) 
+			printf("Newrank %d tidak terdefinisi. Seharusnya bernilai 0\r\n",newrank);
+		else
+			printf("Newrank = rank = %d\r\n",rank);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
+
+### Demo topologi graph
+
+```c++
+//graph_map.c
+#include <mpi.h>
+#include <stdio.h>
+ 
+int main( int argc, char *argv[] )
+{
+    int newrank, rank;
+    int index[2], edges[2];
+ 
+    MPI_Init( &argc, &argv );
+ 
+    MPI_Comm_rank( MPI_COMM_WORLD, &rank );    
+    MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+
+    index[0] = 0;
+    edges[0] = 0;
+    MPI_Graph_map(MPI_COMM_WORLD, 1, index, edges, &newrank );
+   
+    if (rank > 0) 
+	{
+        if (newrank != MPI_UNDEFINED) 
+			printf("newrank %d bukan UNDEFINED\r\n",newrank);
+		else
+			printf("newrank %d UNDEFINED\r\n",newrank);
+    }
+    else 
+	{
+        if (rank != newrank) 
+			printf("Newrank %d tidak terdefinisi. Seharusnya bernilai 0\r\n",newrank);
+		else
+			printf("Newrank = rank = %d\r\n",rank);
+    }
+
+	
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
