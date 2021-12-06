@@ -216,8 +216,41 @@ int main( int argc, char *argv[] )
 
 ## File View
 
+File view merupakan proses pembagian area kerja dalam suatu file . Dalam MPI hal ini dapat dilakukan dengan menggunakan get dan set view:
+```c++
+int MPI_File_set_view(MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype, char *datarep, MPI_Info info)
+```
 
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|fh|file handle|
+|disp|interval|
+|etype|tipe dasar file|
+|filetype|tipe file|
+|datarep|data representatif|
+|info|info objek|
+
+sedangkan untuk membaca area kerja proses pada suatu file, kita dapat memanfaatkan fungsi view sebagai berikut:
+```c++
+int MPI_File_get_view(MPI_File fh, MPI_Offset *disp, MPI_Datatype *etype, MPI_Datatype *filetype, char *datarep)
+```
 
 ## Akses data file
 
+Setelah mempelajari bagaimana membuka dan menutup file, selanjutnya kita akan mempelajari bagaimana membaca dan menulis ke dalam file secara paralel. Isu utama yang terjadi ketika membaca dan menulis adalah sinkronisasi dimana suatu resource yang dalam hal ini adalah file sedapat mungkin tidak boleh dua proses melakukan penulisan data pada alamat file yang sama. Pada MPI proses akses data file dibedakan menjadi tiga bagian, yaitu:
+1. Metode eksplisit offset
+2. Metode individu pointer file
+3. Metode sharing pointer file
+
 ### Metode Eksplisit Offset
+
+Metode eksplisit offset pada akses data file adalah proses akses pada suatu file dengan langsung menyebutkan alamat posisi file yang akan diproses. Misalkan panjang datanya 100 maka apabila kita menggunakan metode ini kita langsung menentukan di posisi mana akan mengakses file ini, contohnya mengakses data pada posisi 60.
+Pada MPI ada banyak opsi yang dapat dipilih ketika kita mengakses data dengan menggunakan metode eksplisit offset. OPsi ini dibedakan berdasarkan bagaimana melakukan sinkronisasi dan kondisi noncollective.
+
+| Sinkronisasi | Noncollective  | Collective |
+| ------------- |:-------------:|:-------------:|
+|Blocking| ``MPI_File_read_at()``
+``MPI_File_write_at()``
+
+| b |
+|Non Blocking dan Split Collective|||
