@@ -42,7 +42,7 @@ pada fungsi ``MPI_File_open()`` kita memerlukan parameter mode file akses sebaga
 
 ```c++
 manipulasi_file.c
-
+buat dan sesuaikan nama file dan direktori
 
 #include <mpi.h>
 #include <stdio.h>
@@ -79,7 +79,144 @@ int main( int argc, char *argv[] )
 
 ### Menghapus file
 
+Kita dapat menghapus file pada lingkungan MPI dengan menggunakan ``MPI_File_delete()``.
+```c++
+int MPI_File_delete(char *filename, MPI_Info info)
+```
+
+```c++
+#include <mpi.h>
+#include <stdio.h>
+
+int main( int argc, char *argv[] )
+{   
+    int rc;
+    int rank;
+    MPI_File hdFile;
+
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    rc = MPI_File_open( MPI_COMM_WORLD, 
+			"c:/temp/data.txt", 
+			MPI_MODE_RDONLY,	
+			MPI_INFO_NULL, &hdFile);
+
+    if (rc) 
+		printf("tidak dapat membuka c:/temp/data.txt\r\n");
+    else 
+	{
+		printf("Rank %d: File dapat dibuka\r\n",rank);
+		MPI_File_close(&hdFile);
+
+		if (rank == 0) 
+		{
+            rc = MPI_File_delete("c:/temp/data.txt", MPI_INFO_NULL);
+            if (rc) 
+				printf("tidak dapat menghapus file c:/temp/data.txt\r\n");
+			else
+				printf("File c:/temp/data.txt sudah dihapus\r\n");
+        }
+
+	}
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
 ## Informasi file
+
+Setiap file akan mempunyai baik informasi yang diberikan oleh sistem operasi mapupun informasi yang diberikan oleh pengguna. Pada MPI kita memperoleh informasi file dengan memanfaatkan fungsi ``MPI_File_get_info()``. Sedangkan untuk menulis informasi kedalam file dapat dilakukan dengan menggunakan fungsi ``MPI_File_set_info()``. Dalam memberikan nilai pada file, MPI mempunyai data informasi yang memang sudah dipakai sehingga kita tidak boleh membuat informasi yang sama. Informasi itu adalah:
+1. access_style
+2. collective_buffering
+3. cb_block_size
+4. cb_buffer_size
+5. cb_nodes
+6. chunked
+7. chunked_item
+8. chunked_size
+9. filename
+10. file_perm
+11. io_node_list
+12. nb_proc
+13. num_io_nodes
+14. striping_factor
+15. striping_unit
+
+```c++
+infofile.c
+
+
+#include <mpi.h>
+#include <stdio.h>
+
+int main( int argc, char *argv[] )
+{   
+    int rc,flag,rank,i,nkeys;
+    MPI_File hdFile;
+	MPI_Info infoin, infoout;	
+	char key[MPI_MAX_INFO_KEY], value[MPI_MAX_INFO_VAL];
+
+
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	rc = MPI_File_open( MPI_COMM_WORLD, 
+			"c:/temp/testfile.txt", 
+			MPI_MODE_CREATE | MPI_MODE_RDWR,
+			MPI_INFO_NULL, &hdFile);
+	if (rc) 
+		printf("tidak dapat membuka c:/temp/testfile.txt\r\n");
+	else 
+	{
+		printf("Rank %d: File dapat dibuka\r\n",rank);
+		if(rank==0)
+		{			
+			MPI_File_get_info(hdFile, &infoout);	
+			MPI_Info_get_nkeys(infoout, &nkeys);
+
+			printf("Nilai key dan value pada file\r\n");
+			for (i = 0; i < nkeys; i++) 
+			{
+			   MPI_Info_get_nthkey(infoout, i, key);
+			   MPI_Info_get(infoout, key, MPI_MAX_INFO_VAL, value, &flag);
+			    if (flag)
+					 printf("   key = %s, value = %s\n",key, value);
+			}
+			
+			printf("Modifikasi nilai cb_buffer_size\r\n");	
+			MPI_Info_create(&infoin);
+			MPI_Info_set(infoin, "cb_buffer_size", "4096" );
+			MPI_File_set_info(hdFile,infoin);
+
+			printf("Nilai key dan value hasil modifikasi pada file\r\n");
+			MPI_File_get_info(hdFile, &infoout);	
+			MPI_Info_get_nkeys(infoout, &nkeys);
+
+			for (i = 0; i < nkeys; i++) 
+			{
+			   MPI_Info_get_nthkey(infoout, i, key);
+			   MPI_Info_get(infoout, key, MPI_MAX_INFO_VAL, value, &flag);
+			    if (flag)
+					 printf("   key = %s, value = %s\n", key, value);
+			}
+			MPI_Info_free(&infoin);	
+			MPI_Info_free(&infoout);
+		}		
+		
+		MPI_File_close(&hdFile);
+	}
+
+    MPI_Finalize();
+    return 0;
+}
+
+
+```
+
+## File View
+
+
 
 ## Akses data file
 
