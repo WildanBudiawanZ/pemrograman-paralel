@@ -251,3 +251,208 @@ Pada MPI ada banyak opsi yang dapat dipilih ketika kita mengakses data dengan me
 | ------------- |:-------------:|:-------------:|
 |Blocking| ``MPI_File_read_at()``<br> ``MPI_File_write_at()`` | ``MPI_File_read_at_all()``<br>''MPI_File_write_at_all()''|
 |Non Blocking dan Split Collective|``MPI_File_iread_at()``<br> ``MPI_File_iwrite_at()``|``MPI_File_read_at_all_begin()``<br>``MPI_File_read_at_all_end()``<br>``MPI_File_write_at_all_begin()``<br>``MPI_File_write_at_all_end()``|
+
+#### Blocking dengan Kondisi Noncollective
+
+Metode ini dilakukan secara blocking dengan kondisi noncollective dan ini dapat memanfaatkan fungsi MPI yang sudah disediakan.
+
+```c++
+int MPI_File_read_at(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status)
+
+int MPI_File_write_at(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|fh|file handle|
+|offset|file offset|
+|buf|alamat awal buffer|
+|count|jumlah elemen buffer|
+|datatype|tipe data buffer|
+|status|status objek|
+
+```c++
+io_explicit_offfset.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main( int argc, char *argv[] )
+{   
+    int rc;
+    int rank,size;
+    MPI_File hdFile;
+	MPI_Offset offset;
+	char data[30];
+	MPI_Status status;
+
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+    rc = MPI_File_open( MPI_COMM_WORLD, 
+			"c:/temp/dump.txt", 
+			MPI_MODE_CREATE | MPI_MODE_RDWR,
+			MPI_INFO_NULL, &hdFile);
+
+    if (rc) 
+		printf("tidak dapat membuka c:/temp/dump.txt\r\n");
+    else 
+	{
+		offset = rank*30;
+		sprintf(data,"Data rank %d",rank);
+		MPI_File_write_at(hdFile,offset,data,30,MPI_CHAR,&status);
+		MPI_File_read_at(hdFile,offset,data,30,MPI_CHAR,&status);
+		printf("Rank %d: Data yang dibaca: %s\r\n",rank,data);
+		MPI_File_close(&hdFile);
+	}
+
+    MPI_Finalize();
+    return 0;
+}
+
+
+```
+
+#### Blocking dengan kondisi Collective
+
+```c++
+int MPI_File_read_at_all(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status)
+
+int MPI_File_write_at_all(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|fh|file handle|
+|offset|file offset|
+|buf|alamat awal buffer|
+|count|jumlah elemen buffer|
+|datatype|tipe data buffer|
+|status|status objek|
+
+```c++
+io_explicit_offset_collective.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main( int argc, char *argv[] )
+{   
+    int rc;
+    int rank,size;
+    MPI_File hdFile;
+	MPI_Offset offset;
+	char data[30];
+	MPI_Status status;
+
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+    rc = MPI_File_open( MPI_COMM_WORLD, 
+			"c:/temp/dump_collective.txt", 
+			MPI_MODE_CREATE | MPI_MODE_RDWR,
+			MPI_INFO_NULL, &hdFile);
+
+    if (rc) 
+		printf("tidak dapat membuka c:/temp/dump_collective.txt\r\n");
+    else 
+	{
+		offset = rank*30;
+		sprintf(data,"Data collective rank %d",rank);
+		MPI_File_write_at_all(hdFile,offset,data,30,MPI_CHAR,&status);
+		MPI_File_read_at_all(hdFile,offset,data,30,MPI_CHAR,&status);
+		printf("Rank %d: Data yang dibaca: %s\r\n",rank,data);
+		MPI_File_close(&hdFile);
+	}
+
+    MPI_Finalize();
+    return 0;
+}
+```
+
+#### Non Blocking dan Split Collective dengan kondisi Noncollective
+
+```c++
+int MPI_File_iread_at_all(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status)
+
+int MPI_File_iwrite_at_all(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|fh|file handle|
+|offset|file offset|
+|buf|alamat awal buffer|
+|count|jumlah elemen buffer|
+|datatype|tipe data buffer|
+|status|status objek|
+
+```c++
+io_explicit_offer_nonblock.c
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main( int argc, char *argv[] )
+{   
+    int rc;
+    int rank,size;
+    MPI_File hdFile;
+	MPI_Offset offset;
+	char data[30];
+	MPI_Status status;
+	MPI_Request request;
+
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+    rc = MPI_File_open( MPI_COMM_WORLD, 
+			"c:/temp/dump_nonblock.txt", 
+			MPI_MODE_CREATE | MPI_MODE_RDWR,
+			MPI_INFO_NULL, &hdFile);
+
+    if (rc) 
+		printf("tidak dapat membuka c:/temp/dump_nonblock.txt\r\n");
+    else 
+	{
+		offset = rank*30;
+		sprintf(data,"Data non-blocking rank %d",rank);
+		MPI_File_iwrite_at(hdFile,offset,data,30,MPI_CHAR,&request);
+		MPI_Wait(&request, &status);
+
+		MPI_File_iread_at(hdFile,offset,data,30,MPI_CHAR,&request);
+		MPI_Wait(&request, &status);
+		printf("Rank %d: Data yang dibaca: %s\r\n",rank,data);
+		MPI_File_close(&hdFile);
+	}
+
+    MPI_Finalize();
+    return 0;
+}
+
+
+```
+
+#### Non Blocking dan Split Collective dengan kondisi Collective
+
+```c++
+int MPI_File_read_at_all_begin(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype)
+
+int MPI_File_read_at_all_end(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status)
+
+int MPI_File_write_at_all_begin(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype)
+
+int MPI_File_write_at_all_end(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status)
+```
+
+| Parameter | Keterangan  |
+| ------------- |:-------------:|
+|fh|file handle|
+|offset|file offset|
+|buf|alamat awal buffer|
+|count|jumlah elemen buffer|
+|datatype|tipe data buffer|
+|status|status objek|
