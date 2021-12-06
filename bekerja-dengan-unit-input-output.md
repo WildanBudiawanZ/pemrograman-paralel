@@ -249,8 +249,5 @@ Pada MPI ada banyak opsi yang dapat dipilih ketika kita mengakses data dengan me
 
 | Sinkronisasi | Noncollective  | Collective |
 | ------------- |:-------------:|:-------------:|
-|Blocking| ``MPI_File_read_at()``
-``MPI_File_write_at()``
-
-| b |
-|Non Blocking dan Split Collective|||
+|Blocking| ``MPI_File_read_at()``<br> ``MPI_File_write_at()`` | ``MPI_File_read_at_all()``<br>''MPI_File_write_at_all()''|
+|Non Blocking dan Split Collective|``MPI_File_iread_at()``<br> ``MPI_File_iwrite_at()``|``MPI_File_read_at_all_begin()``<br>``MPI_File_read_at_all_end()``<br>``MPI_File_write_at_all_begin()``<br>``MPI_File_write_at_all_end()``|
