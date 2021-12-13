@@ -4,7 +4,7 @@ Sumber : Agus Kurniawan. 2010. Pemrograman Paralel dengan MPI dan C. Andi (279-2
 
 ## Mengenal Komunikasi Satu Sisi
 
-MPI menyediakan pengembangan hal komunikasi dengan memanfaatkan remote memory access (RMS) di mana satu proses dapat bertindak sebagai sisi penerima dan sisi pengirim. FItur ini hanya tersedia pada MPI 2 ke atas. Desain rancangan seperti ini para pengguna MPI dapat memperoleh keuntungan seperti mekanisme komunikasi dengan berbagai platform. Semua komunikasisatu sisi adalah proses non blocking. Oleh karena itu, kita memerlukan mekanisme sinkronisasi antar prosesnya.
+MPI menyediakan pengembangan hal komunikasi dengan memanfaatkan remote memory access (RMA) di mana satu proses dapat bertindak sebagai sisi penerima dan sisi pengirim. FItur ini hanya tersedia pada MPI 2 ke atas. Desain rancangan seperti ini para pengguna MPI dapat memperoleh keuntungan seperti mekanisme komunikasi dengan berbagai platform. Semua komunikasisatu sisi adalah proses non blocking. Oleh karena itu, kita memerlukan mekanisme sinkronisasi antar prosesnya.
 
 ## Membangun Komunikasi
 
